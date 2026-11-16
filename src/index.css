@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+    background: #07080c;
+  }
+
+  body {
+    @apply bg-ink-950 font-sans text-slate-300 antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: rgba(53, 224, 242, 0.3);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid #35e0f2;
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+}
+
+@layer components {
+  /* Small monospace "control panel" label */
+  .label-mono {
+    @apply font-mono text-[11px] uppercase tracking-[0.22em] text-signal/80;
+  }
+
+  /* Panel with HUD corner brackets */
+  .hud-card {
+    @apply relative rounded-lg border border-white/[0.07] bg-ink-900/70;
+  }
+  .hud-card::before,
+  .hud-card::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border: 0 solid rgba(53, 224, 242, 0.55);
+    pointer-events: none;
+    transition: width 0.25s ease, height 0.25s ease, border-color 0.25s ease;
+  }
+  .hud-card::before {
+    top: -1px;
+    left: -1px;
+    border-width: 1px 0 0 1px;
+    border-top-left-radius: 8px;
+  }
+  .hud-card::after {
+    right: -1px;
+    bottom: -1px;
+    border-width: 0 1px 1px 0;
+    border-bottom-right-radius: 8px;
+  }
+  .hud-card:hover::before,
+  .hud-card:hover::after,
+  .hud-card:focus-within::before,
+  .hud-card:focus-within::after {
+    width: 26px;
+    height: 26px;
+    border-color: rgba(255, 181, 71, 0.8);
+  }
+
+  /* Faint control-room grid background, faded toward the edges */
+  .bg-grid {
+    background-image:
+      linear-gradient(rgba(53, 224, 242, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(53, 224, 242, 0.05) 1px, transparent 1px);
+    background-size: 56px 56px;
+    -webkit-mask-image: radial-gradient(ellipse at center, #000 25%, transparent 72%);
+    mask-image: radial-gradient(ellipse at center, #000 25%, transparent 72%);
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-5 py-3 font-display text-sm font-semibold tracking-wide transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-amber-glow text-ink-950 shadow-amber hover:bg-[#ffc56e];
+  }
+  .btn-ghost {
+    @apply btn border border-signal/40 bg-signal/[0.04] text-signal-soft hover:border-signal hover:bg-signal/10;
+  }
+
+  .chip {
+    @apply inline-flex items-center rounded border border-white/10 bg-white/[0.03] px-2.5 py-1 font-mono text-[12px] text-slate-300;
+  }
+
+  .skip-link {
+    @apply absolute left-4 top-0 z-[100] -translate-y-full rounded-b-md bg-signal px-4 py-2 font-semibold text-ink-950 transition-transform focus:translate-y-0;
+  }
+}
+
+/* CSS-only hero entrance so the headline is never gated on JavaScript. */
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hero-in {
+  animation: hero-in 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+@keyframes sweep {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+.scan-line {
+  animation: sweep 6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
