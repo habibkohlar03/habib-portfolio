@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Heavy 3D libraries are split into their own chunks. They are only imported
-// from the lazily loaded AvatarScene, so they never block first paint.
+// The avatar libraries are only imported from the lazily loaded TalkingAvatarStage,
+// so they never block first paint.
 export default defineConfig({
   plugins: [react()],
   build: {
@@ -10,9 +10,11 @@ export default defineConfig({
     chunkSizeWarningLimit: 900,
     rollupOptions: {
       output: {
-        manualChunks: {
-          three: ['three'],
-          r3f: ['@react-three/fiber', '@react-three/drei'],
+        // three.js (used by the Talking Avatar SDK) gets its own chunk. The function
+        // form only chunks modules that are actually imported.
+        manualChunks(id) {
+          if (id.includes('node_modules/three/')) return 'three';
+          return undefined;
         },
       },
     },

@@ -4,34 +4,64 @@ import { useAnimations, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { RHUBARB_TO_VISEME, collectMorphMeshes, cueAt, detectLipSync, setMorph } from '../../audio/lipsync';
+import { findBone, lowerArms } from './avatarPose';
 
 /**
  * Loads the visitor-facing avatar from a GLB file.
  *
- * - Auto-scales to `height` and stands the model on the platform.
- * - Plays an idle animation clip if the file contains one.
+ * - Auto-scales to `config.height` and stands the model on the platform.
+ * - Lowers a T-pose into a relaxed standing pose (see avatarPose.js).
+ * - Plays an idle clip if the file contains one. Otherwise it adds subtle
+ *   breathing, head sway and, while the voice plays, a light head nod. All of
+ *   it is composed ON TOP of each bone's rest rotation.
  * - Lip-sync is driven ONLY by real morph targets in the file:
  *     visemes + timeline  -> accurate viseme animation
  *     jawOpen / mouthOpen -> audio-loudness-driven jaw
  *     neither             -> no mouth animation (reported via onCapabilities)
+ *   The current Avaturn export has no morph targets, so it falls in the last
+ *   group: the body moves, the mouth does not.
  */
-export default function GlbAvatar({ url, height = 1.75, audio, hasTimeline, onCapabilities }) {
-  const gltf = useGLTF(url);
-  const scene = useMemo(() => cloneSkinned(gltf.scene), [gltf.scene]);
+export default function GlbAvatar({ config, audio, hasTimeline, onCapabilities }) {
+  const gltf = useGLTF(config.url, Boolean(config.draco));
   const group = useRef();
   const weights = useRef({});
+  const speakAmount = useRef(0);
 
+  // Own copy of the scene (safe if the component mounts twice) with the pose applied.
+  const prepared = useMemo(() => {
+    const scene = cloneSkinned(gltf.scene);
+    scene.traverse((obj) => {
+      // Posed/animated bones can leave the static bounding sphere; never cull the avatar.
+      if (obj.isSkinnedMesh) obj.frustumCulled = false;
+    });
+    scene.updateMatrixWorld(true);
+
+    const pose = config.pose || {};
+    const lowered = pose.lowerArms === false ? 0 : lowerArms(scene, pose.armSpreadDeg ?? 18);
+
+    scene.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(scene);
+    const size = box.max.y - box.min.y;
+    const valid = Number.isFinite(size) && size > 0.1;
+    const scale = valid ? config.height / size : 1;
+    const y = valid ? -box.min.y * scale : 0;
+    return { scene, scale, y, lowered };
+  }, [gltf.scene, config.height, config.pose]);
+
+  const { scene } = prepared;
   const { actions, names } = useAnimations(gltf.animations, group);
   const meshes = useMemo(() => collectMorphMeshes(scene), [scene]);
   const caps = useMemo(() => detectLipSync(meshes), [meshes]);
-  const headBone = useMemo(() => scene.getObjectByName('Head') ?? null, [scene]);
 
-  const fit = useMemo(() => {
-    const box = new THREE.Box3().setFromObject(scene);
-    const size = box.max.y - box.min.y || 1;
-    const scale = height / size;
-    return { scale, y: -box.min.y * scale };
-  }, [scene, height]);
+  // Bones we nudge procedurally, with their rest rotations remembered.
+  const bones = useMemo(() => {
+    const entries = {};
+    for (const key of ['Head', 'Neck', 'Spine2']) {
+      const bone = findBone(scene, key);
+      if (bone) entries[key] = { bone, rest: bone.quaternion.clone() };
+    }
+    return entries;
+  }, [scene]);
 
   // Tell the page what this avatar can really do.
   useEffect(() => {
@@ -52,16 +82,32 @@ export default function GlbAvatar({ url, height = 1.75, audio, hasTimeline, onCa
     };
   }, [actions, names]);
 
+  const tmpQ = useMemo(() => new THREE.Quaternion(), []);
+  const tmpE = useMemo(() => new THREE.Euler(), []);
+  const nudge = (entry, pitch, yaw) => {
+    if (!entry) return;
+    tmpE.set(pitch, yaw, 0);
+    entry.bone.quaternion.copy(entry.rest).multiply(tmpQ.setFromEuler(tmpE));
+  };
+
   useFrame((state, dt) => {
     const a = audio.current;
     const t = state.clock.elapsedTime;
     const speaking = a.playing;
+    const level = speaking ? a.getLevel() : 0;
     const w = weights.current;
 
-    // Subtle head motion only when the file has no animation clips of its own.
-    if (headBone && names.length === 0) {
-      headBone.rotation.y = Math.sin(t * 0.5) * 0.06;
-      headBone.rotation.x = speaking ? Math.sin(t * 4.2) * 0.03 : 0;
+    // Procedural body motion, only when the file has no animation clips of its own.
+    if (names.length === 0) {
+      speakAmount.current = THREE.MathUtils.damp(speakAmount.current, speaking ? 1 : 0, 4, dt);
+      const s = speakAmount.current;
+      nudge(bones.Spine2, Math.sin(t * 1.5) * 0.012 + level * 0.01, 0);
+      nudge(bones.Neck, Math.sin(t * 0.8) * 0.01, Math.sin(t * 0.45) * 0.03);
+      nudge(
+        bones.Head,
+        Math.sin(t * 0.7) * 0.015 + s * Math.sin(t * 4.2) * 0.035 * (0.5 + level),
+        Math.sin(t * 0.5) * 0.05 + s * Math.sin(t * 1.7) * 0.05,
+      );
     }
 
     if (!meshes.length) return;
@@ -79,15 +125,21 @@ export default function GlbAvatar({ url, height = 1.75, audio, hasTimeline, onCa
       // Fallback: open the jaw with audio loudness.
       const key = caps.jaw ?? (caps.visemes.includes('viseme_aa') ? 'viseme_aa' : null);
       if (!key) return;
-      const level = speaking ? a.getLevel() : 0;
       const target = Math.min(1, level * 1.6) * 0.8;
       w[key] = THREE.MathUtils.damp(w[key] ?? 0, target, 18, dt);
       setMorph(meshes, key, w[key]);
     }
   });
 
+  const [ox = 0, oy = 0, oz = 0] = config.offset || [];
+
   return (
-    <group ref={group} position={[0, fit.y, 0]} scale={fit.scale}>
+    <group
+      ref={group}
+      position={[ox, prepared.y + oy, oz]}
+      rotation={[0, config.rotationY || 0, 0]}
+      scale={prepared.scale}
+    >
       <primitive object={scene} />
     </group>
   );

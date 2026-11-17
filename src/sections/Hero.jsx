@@ -1,30 +1,30 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowDown, ArrowRight, Mail } from 'lucide-react';
 import { site } from '../data/site';
 import { assets } from '../data/assets';
 import { useQualityTier } from '../hooks/useQualityTier';
-import { useIntroAudio } from '../audio/useIntroAudio';
-import IntroPlayer from '../audio/IntroPlayer';
 import AvatarFallback from '../components/three/AvatarFallback';
 import SceneErrorBoundary from '../components/three/SceneErrorBoundary';
+import IntroControls from '../components/avatar/IntroControls';
+import { useIntroPlayback } from '../components/avatar/useIntroPlayback';
 
-// The heavy 3D bundle (three + r3f + drei) is only fetched here, after first paint.
-const AvatarScene = lazy(() => import('../components/three/AvatarScene'));
+// The Talking Avatar SDK and three.js are only fetched here, after first paint.
+const TalkingAvatarStage = lazy(() => import('../components/avatar/TalkingAvatarStage'));
 
-const CAPS_TEXT = {
-  placeholder: 'Placeholder avatar · add your GLB for likeness and lip-sync',
+const CAPTIONS = {
   loading: 'Loading avatar…',
-  none: 'Avatar loaded · no facial blendshapes found, lip-sync off',
-  amplitude: 'Lip-sync: audio-driven jaw movement',
-  visemes: 'Lip-sync: viseme timeline',
-  'load-failed': 'Avatar file could not be loaded · showing placeholder',
+  ready: 'Open-source Talking Avatar SDK',
+  failed: 'Avatar unavailable · audio-only introduction',
+  off: '3D avatar off (reduced motion, data saver or no WebGL) · audio-only introduction',
 };
 
 export default function Hero() {
   const quality = useQualityTier();
-  const audio = useIntroAudio(assets.voice);
   const [mount3D, setMount3D] = useState(false);
-  const [caps, setCaps] = useState({ mode: assets.avatar.enabled ? 'loading' : 'placeholder' });
+  const [avatarState, setAvatarState] = useState('loading'); // loading | ready | failed
+  const avatarRef = useRef(null);
+  const onAvatarReady = useCallback(() => setAvatarState('ready'), []);
+  const onAvatarFailed = useCallback(() => setAvatarState('failed'), []);
 
   // Mount the 3D scene when the browser is idle so text and CTAs paint first.
   useEffect(() => {
@@ -44,6 +44,9 @@ export default function Hero() {
   }, [quality]);
 
   const show3D = quality !== 'static' && mount3D;
+  const avatarActive = show3D && avatarState !== 'failed';
+  const intro = useIntroPlayback({ avatarRef, url: assets.voice.url, avatarActive });
+  const caption = quality === 'static' ? CAPTIONS.off : CAPTIONS[avatarState];
 
   return (
     <section id="top" aria-labelledby="hero-title" className="relative isolate overflow-hidden">
@@ -93,7 +96,14 @@ export default function Hero() {
           </div>
 
           <div className="hero-in mt-8" style={{ '--d': '400ms' }}>
-            <IntroPlayer audio={audio} transcript={assets.voice.transcript} />
+            <IntroControls
+              enabled={assets.voice.enabled}
+              status={intro.status}
+              message={intro.message}
+              onPlay={intro.play}
+              onStop={intro.stop}
+              transcript={assets.voice.transcript}
+            />
           </div>
 
           <dl className="hero-in mt-10 flex gap-8 border-t border-white/[0.07] pt-6" style={{ '--d': '480ms' }}>
@@ -109,8 +119,10 @@ export default function Hero() {
         </div>
 
         {/* avatar stage */}
+        {/* data-hero-stage lives on a plain wrapper: the CSS entrance animation on the
+            inner element would otherwise override GSAP's scroll-parallax transform. */}
+        <div data-hero-stage>
         <div
-          data-hero-stage
           className="hero-in relative h-[58svh] min-h-[380px] w-full lg:h-[82svh] lg:max-h-[760px]"
           style={{ '--d': '200ms' }}
         >
@@ -119,15 +131,14 @@ export default function Hero() {
               <div className="scan-line h-full w-full bg-gradient-to-b from-transparent via-signal/20 to-transparent" />
             </div>
 
-            {show3D ? (
-              <SceneErrorBoundary fallback={<AvatarFallback />} onError={() => setCaps({ mode: 'load-failed' })}>
+            {avatarActive ? (
+              <SceneErrorBoundary fallback={<AvatarFallback />} onError={onAvatarFailed}>
                 <Suspense fallback={<AvatarFallback />}>
-                  <AvatarScene
-                    quality={quality}
-                    audio={audio.stateRef}
-                    avatar={assets.avatar}
-                    hasTimeline={Boolean(assets.voice.visemeTimeline)}
-                    onCapabilities={setCaps}
+                  <TalkingAvatarStage
+                    ref={avatarRef}
+                    modelUrl={assets.sdk.modelUrl}
+                    onReady={onAvatarReady}
+                    onFailed={onAvatarFailed}
                   />
                 </Suspense>
               </SceneErrorBoundary>
@@ -139,9 +150,10 @@ export default function Hero() {
               Control room // live
             </p>
             <p className="pointer-events-none absolute inset-x-4 bottom-4 font-mono text-[10px] uppercase leading-relaxed tracking-[0.14em] text-slate-500">
-              {CAPS_TEXT[caps.mode] ?? ''}
+              {caption}
             </p>
           </div>
+        </div>
         </div>
       </div>
 

@@ -78,7 +78,7 @@ export default function Navbar() {
           className="grid h-10 w-10 place-items-center rounded-md border border-white/10 text-slate-200 lg:hidden"
           aria-label={open ? 'Close menu' : 'Open menu'}
           aria-expanded={open}
-          aria-controls="mobile-menu"
+          aria-controls={open ? 'mobile-menu' : undefined}
           onClick={() => setOpen((v) => !v)}
         >
           {open ? <X size={20} /> : <Menu size={20} />}

@@ -1,5 +1,7 @@
-# 3D avatar slot
+# 3D avatar
 
-Drop your avatar here as `avatar.glb`, then set `assets.avatar.enabled = true`
-in `src/data/assets.js`. See the main README for the exact avatar requirements
-(full body, facial blendshapes for lip-sync, neutral pose or an idle clip).
+`avatar.glb` is the Avaturn export used by the hero scene (see `src/data/assets.js`).
+
+To replace it, overwrite this file (or change `assets.avatar.url`). The model is
+auto-scaled and stood on the platform. See the main README for what the current
+file contains and what a replacement needs for real lip-sync.

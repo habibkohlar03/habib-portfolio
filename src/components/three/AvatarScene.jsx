@@ -2,19 +2,25 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor } from '@react-three/drei';
 import * as THREE from 'three';
+import { assets } from '../../data/assets';
 import StudioStage from './StudioStage';
 import PlaceholderAvatar from './PlaceholderAvatar';
 import GlbAvatar from './GlbAvatar';
 import SceneErrorBoundary from './SceneErrorBoundary';
 
+// Backs the camera away until the avatar's full height AND the platform width
+// both fit, whatever shape the stage is (phone, tablet or desktop).
 function CameraSetup() {
   const { camera, size } = useThree();
   useEffect(() => {
-    const narrow = size.width < 640;
-    camera.position.set(0, 1.05, narrow ? 6.4 : 5);
-    camera.lookAt(0, 0.95, 0);
+    const { viewHeight, viewWidth, minDistance, cameraY, targetY } = assets.stage;
+    const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    const aspect = size.width / Math.max(size.height, 1);
+    const distance = Math.max(viewHeight / 2 / tan, viewWidth / 2 / (tan * aspect), minDistance);
+    camera.position.set(0, cameraY, distance);
+    camera.lookAt(0, targetY, 0);
     camera.updateProjectionMatrix();
-  }, [camera, size.width]);
+  }, [camera, size.width, size.height]);
   return null;
 }
 
@@ -50,12 +56,16 @@ export default function AvatarScene({ quality, audio, avatar, hasTimeline, onCap
       ref={wrapper}
       className="absolute inset-0"
       role="img"
-      aria-label="Interactive 3D avatar of Habib Ullah (placeholder model)"
+      aria-label={
+        avatar.enabled
+          ? 'Interactive 3D avatar of Habib Ullah'
+          : 'Interactive 3D avatar of Habib Ullah (placeholder model)'
+      }
     >
       <Canvas
         dpr={dpr}
         frameloop={inView ? 'always' : 'never'}
-        camera={{ fov: 30, near: 0.1, far: 50, position: [0, 1.05, 5] }}
+        camera={{ fov: 30, near: 0.1, far: 50, position: [0, assets.stage.cameraY, 5] }}
         gl={{
           antialias: quality === 'high',
           alpha: true,
@@ -72,14 +82,9 @@ export default function AvatarScene({ quality, audio, avatar, hasTimeline, onCap
               fallback={placeholder}
               onError={() => onCapabilities && onCapabilities({ mode: 'load-failed' })}
             >
-              <Suspense fallback={placeholder}>
-                <GlbAvatar
-                  url={avatar.url}
-                  height={avatar.height}
-                  audio={audio}
-                  hasTimeline={hasTimeline}
-                  onCapabilities={onCapabilities}
-                />
+              {/* While the GLB downloads, show only the platform (the caption says "Loading avatar…"). */}
+              <Suspense fallback={null}>
+                <GlbAvatar config={avatar} audio={audio} hasTimeline={hasTimeline} onCapabilities={onCapabilities} />
               </Suspense>
             </SceneErrorBoundary>
           ) : (

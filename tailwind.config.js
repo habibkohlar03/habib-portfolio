@@ -20,6 +20,11 @@ export default {
         amber: {
           glow: '#ffb547', // warm highlight, used sparingly
         },
+        // Lifted from Tailwind's defaults so small captions pass WCAG AA (4.5:1) on ink-700..950.
+        slate: {
+          500: '#8593a8',
+          600: '#78869b',
+        },
       },
       fontFamily: {
         display: ['"Space Grotesk"', 'ui-sans-serif', 'system-ui', 'sans-serif'],

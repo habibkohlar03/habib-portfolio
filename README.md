@@ -49,38 +49,43 @@ The form is disabled and says so until you set an endpoint in `src/data/contact.
 
 Until step 4, the success message says the submission was *accepted by the form service* and never claims the message was delivered.
 
-## Adding your 3D avatar
+## Talking avatar and voice introduction (Talking Avatar SDK)
 
-The site runs without it (a stylized placeholder mannequin is shown). To integrate your own:
+The hero uses the free, open-source [Talking Avatar SDK](https://talking-avatar.dev/open-source-talking-avatar)
+(`@interviewflowai/talking-avatar`, MIT) with its built-in male avatar (`AVATARS.male`). It provides the
+facial blendshapes and lip-sync that the old Avaturn `avatar.glb` lacked. No paid APIs or services are used.
 
-1. Create the avatar from your photos with a tool such as **Ready Player Me** or **Avaturn** (check their current terms), and export a **full-body GLB**.
-2. Requirements for the GLB:
-   - **Facial blendshapes for lip-sync:** ARKit-style (`jawOpen`, `mouthOpen`, ...) and/or Oculus visemes (`viseme_aa`, `viseme_PP`, ...). In Ready Player Me, enable the ARKit/Oculus-viseme morph target options on export.
-   - **A neutral standing pose, or an idle animation clip.** Many exports are in a T-pose with no animation. If yours is, re-export in a relaxed pose or add an idle clip (named with "idle"; it plays automatically).
-   - Keep it **under ~5 MB** (compress textures; Draco/meshopt via `gltf-transform` or `gltfjsx`).
-3. Save it as `public/models/avatar.glb`.
-4. Set `assets.avatar.enabled = true` in `src/data/assets.js`.
+How it works:
 
-The model is auto-scaled and placed on the platform. The caption under the avatar reports what it detected:
+- `src/components/avatar/TalkingAvatarStage.jsx` renders the SDK's `TalkingAvatarView` (lazy-loaded after first paint).
+- **Play Introduction** calls the SDK's `speak('/audio/intro.mp3')`. The avatar plays the audio itself and its mouth is driven from the audio. **Stop** calls `stopSpeaking()`.
+- If the clip fails to load or decode, a clear message and a **Try again** button are shown.
+- If the avatar cannot be shown (no WebGL, reduced motion, data saver, or it failed to load), the same buttons play the audio on its own, so the introduction still works.
+- The playback logic lives in `src/components/avatar/introPlayback.js` (plain JS, unit-testable).
 
-| Caption | Meaning |
-|---|---|
-| Lip-sync: viseme timeline | Visemes present **and** a timeline is configured (most accurate) |
-| Lip-sync: audio-driven jaw movement | Only a jaw/mouth-open shape was found |
-| No facial blendshapes found, lip-sync off | The model has no usable face morph targets, so **nothing is faked**. Re-export with blendshapes |
+Setup after unzipping:
 
-If the GLB fails to load, the placeholder is shown automatically.
+```bash
+npm install          # installs the SDK + three, and copies viseme-model.bin to public/sdk/
+npm run dev
+```
 
-Note: Drei loads the Draco decoder from a CDN by default. If you export with Draco, either allow that or use meshopt compression.
+`npm install` runs `scripts/copy-viseme-model.mjs`, which copies the SDK's lip-sync model from
+`node_modules/@interviewflowai/talking-avatar/dist/viseme-model.bin` to `public/sdk/viseme-model.bin`
+(re-run with `npm run sync-sdk`). **Commit `public/sdk/viseme-model.bin`** so Vercel serves it from your domain.
+To use the SDK's jsDelivr copy instead, set `assets.sdk.modelUrl = null` in `src/data/assets.js`.
 
-## Adding your voice introduction
+`package.json` lists the SDK as `"latest"`. After your first install, run
+`npm install @interviewflowai/talking-avatar@latest` once so npm records a normal version range, then commit
+`package-lock.json`.
 
-1. Save the recording as `public/audio/intro.mp3` (same origin, no external CDN, so the analyser can read it).
-2. Set `assets.voice.enabled = true` in `src/data/assets.js`.
-3. Optional but recommended: an accessible **transcript** in `assets.voice.transcript`.
-4. Optional, for accurate lip-sync: run your recording through [Rhubarb Lip Sync](https://github.com/DanielSWolf/rhubarb-lip-sync) (`rhubarb -f json intro.mp3 -o intro.visemes.json`), save the file in `public/audio/`, and set `assets.voice.visemeTimeline = '/audio/intro.visemes.json'`.
+Files: the voice file is `public/audio/intro.mp3` (switch: `assets.voice.enabled`). An optional transcript can go
+in `assets.voice.transcript`.
 
-The player provides Play / Pause / Replay and a progress bar. When the audio ends, the avatar returns to idle and Replay restarts from the beginning. Audio is not downloaded until the visitor clicks.
+### Legacy files (not used by the hero any more)
+
+`public/models/avatar.glb` (Avaturn export, T-pose, no facial blendshapes), `src/components/three/*`,
+`src/audio/*`. They are kept untouched. Delete `avatar.glb` if you want to save 4 MB in the deployed site.
 
 ## Performance and accessibility notes
 
@@ -131,5 +136,8 @@ public/         favicon, robots.txt, models/, audio/, images/projects/
 - [ ] OS "reduce motion" on: static avatar, no scroll animations
 - [ ] Keyboard only: Tab reaches every control with a visible focus ring
 - [ ] Lighthouse (mobile): check Performance, Accessibility, SEO
-- [ ] After adding assets: voice plays, pauses, replays; avatar returns to idle at the end
+- [ ] Hero: the avatar appears (full head and upper body) at phone, tablet and desktop widths
+- [ ] Press **Play Introduction**: audio plays and the avatar's mouth moves in sync; **Stop** stops both
+- [ ] Break the audio path on purpose (rename intro.mp3): a clear error message and a **Try again** button appear
+- [ ] `public/sdk/viseme-model.bin` exists and loads (DevTools > Network, no 404)
 - [ ] After connecting the form: test submission arrives in your inbox
