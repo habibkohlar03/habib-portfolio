@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { assets } from '../../data/assets';
 import StudioStage from './StudioStage';
 import PlaceholderAvatar from './PlaceholderAvatar';
-import GlbAvatar from './GlbAvatar';
+import FullBodyAvatar from './FullBodyAvatar';
 import SceneErrorBoundary from './SceneErrorBoundary';
 
 // Backs the camera away until the avatar's full height AND the platform width
@@ -22,18 +22,6 @@ function CameraSetup() {
     camera.updateProjectionMatrix();
   }, [camera, size.width, size.height]);
   return null;
-}
-
-// Turns the avatar toward the cursor on desktop; a slow idle sway everywhere else.
-function Rig({ quality, children }) {
-  const ref = useRef();
-  useFrame((state, dt) => {
-    if (!ref.current) return;
-    const target =
-      quality === 'high' ? state.pointer.x * 0.35 : Math.sin(state.clock.elapsedTime * 0.4) * 0.15;
-    ref.current.rotation.y = THREE.MathUtils.damp(ref.current.rotation.y, target, 3, dt);
-  });
-  return <group ref={ref}>{children}</group>;
 }
 
 export default function AvatarScene({ quality, audio, avatar, hasTimeline, onCapabilities }) {
@@ -76,21 +64,25 @@ export default function AvatarScene({ quality, audio, avatar, hasTimeline, onCap
         <PerformanceMonitor onDecline={() => setDpr(1)} />
         <CameraSetup />
         <StudioStage quality={quality} audio={audio} />
-        <Rig quality={quality}>
-          {avatar.enabled ? (
-            <SceneErrorBoundary
-              fallback={placeholder}
-              onError={() => onCapabilities && onCapabilities({ mode: 'load-failed' })}
-            >
-              {/* While the GLB downloads, show only the platform (the caption says "Loading avatar…"). */}
-              <Suspense fallback={null}>
-                <GlbAvatar config={avatar} audio={audio} hasTimeline={hasTimeline} onCapabilities={onCapabilities} />
-              </Suspense>
-            </SceneErrorBoundary>
-          ) : (
-            placeholder
-          )}
-        </Rig>
+        {avatar.enabled ? (
+          <SceneErrorBoundary
+            fallback={placeholder}
+            onError={() => onCapabilities && onCapabilities({ mode: 'load-failed' })}
+          >
+            {/* While the GLB downloads, show only the platform (the caption says "Loading avatar…"). */}
+            <Suspense fallback={null}>
+              <FullBodyAvatar
+                config={avatar}
+                audio={audio}
+                hasTimeline={hasTimeline}
+                onCapabilities={onCapabilities}
+                enableLook={quality === 'high'}
+              />
+            </Suspense>
+          </SceneErrorBoundary>
+        ) : (
+          placeholder
+        )}
       </Canvas>
     </div>
   );

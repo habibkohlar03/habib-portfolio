@@ -11,7 +11,7 @@ export const assets = {
     url: '/models/avatar.glb',
 
     // Target standing height in scene units. The model is auto-scaled to this.
-    height: 1.75,
+    height: 1.75, // full body, head to feet
     // Extra rotation around the vertical axis, in radians (0 = facing the camera).
     rotationY: 0,
     // Nudge the model on the platform: [x, y, z] in scene units.
@@ -38,19 +38,12 @@ export const assets = {
     targetY: 0.85,
   },
 
-  // Talking Avatar SDK (free, open source): built-in male avatar, lip-sync from audio.
-  // modelUrl is the self-hosted lip-sync model, copied from the package into
-  // public/sdk/ by `npm install` (see scripts/copy-viseme-model.mjs). Set it to
-  // null to let the SDK load the model from jsDelivr instead.
-  sdk: {
-    modelUrl: '/sdk/viseme-model.bin',
-  },
-
   voice: {
-    enabled: true, // /public/audio/intro.mp3 (played by the Talking Avatar SDK)
+    enabled: true, // /public/audio/intro.mp3
     url: '/audio/intro.mp3',
-    // Not used by the Talking Avatar SDK (it analyses the audio itself). Kept for
-    // the legacy GLB avatar path.
+    // Rhubarb Lip Sync output for intro.mp3 (JSON with `mouthCues`), e.g.
+    // '/audio/intro.rhubarb.json'. Gives accurate lip-sync on a model that has
+    // facial morph targets. Leave null until you have generated it.
     visemeTimeline: null,
     // Optional plain-text transcript, shown to visitors for accessibility.
     transcript: '',

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  *
  * Exposes play / pause / toggle / replay and a `stateRef` that the 3D scene
  * reads every frame WITHOUT causing React re-renders:
- *   stateRef.current = { playing, getLevel(), getTime(), cues }
+ *   stateRef.current = { playing, getLevel(), getBands(), getTime(), cues }
  *
  * - getLevel(): 0..1 loudness from a Web Audio analyser (0 if unavailable)
  * - getTime():  current playback time in seconds
@@ -18,10 +18,12 @@ export function useIntroAudio(config) {
   const url = config ? config.url : '';
   const timelineUrl = config ? config.visemeTimeline : null;
 
-  const stateRef = useRef({ playing: false, getLevel: () => 0, getTime: () => 0, cues: null });
+  const stateRef = useRef({ playing: false, getLevel: () => 0, getBands: () => ({ low: 0, mid: 0, high: 0 }), getTime: () => 0, cues: null });
   const audioRef = useRef(null);
   const graphRef = useRef(null);
   const srcSetRef = useRef(false);
+  const stoppedRef = useRef(false);
+  const cuesRequestedRef = useRef(false);
   const [element, setElement] = useState(null);
   const [status, setStatus] = useState(enabled ? 'idle' : 'unavailable');
 
@@ -31,10 +33,14 @@ export function useIntroAudio(config) {
       return undefined;
     }
 
+    // The intro is a small file (~300 KB): load it as soon as the page is idle-ready
+    // so that pressing Play starts the voice immediately.
     const audio = new Audio();
-    audio.preload = 'none'; // nothing is downloaded until the visitor presses play
+    audio.preload = 'auto';
+    audio.src = url;
     audioRef.current = audio;
-    srcSetRef.current = false;
+    srcSetRef.current = true;
+    stoppedRef.current = false;
     const state = stateRef.current;
     state.getTime = () => audio.currentTime;
     setElement(audio);
@@ -47,6 +53,11 @@ export function useIntroAudio(config) {
     const onPause = () => {
       if (audio.ended) return;
       state.playing = false;
+      if (stoppedRef.current) {
+        stoppedRef.current = false;
+        setStatus('idle');
+        return;
+      }
       setStatus('paused');
     };
     const onEnded = () => {
@@ -73,6 +84,7 @@ export function useIntroAudio(config) {
       audio.pause();
       state.playing = false;
       state.getLevel = () => 0;
+      state.getBands = () => ({ low: 0, mid: 0, high: 0 });
       state.cues = null;
       if (graphRef.current) {
         graphRef.current.ctx.close().catch(() => {});
@@ -97,7 +109,20 @@ export function useIntroAudio(config) {
       source.connect(analyser);
       analyser.connect(ctx.destination);
       const buffer = new Uint8Array(analyser.fftSize);
+      const freq = new Uint8Array(analyser.frequencyBinCount);
+      const hzPerBin = ctx.sampleRate / analyser.fftSize;
+      const bandAvg = (from, to) => {
+        const a = Math.max(1, Math.round(from / hzPerBin));
+        const b = Math.min(freq.length, Math.round(to / hzPerBin));
+        let sum = 0;
+        for (let i = a; i < b; i += 1) sum += freq[i];
+        return b > a ? sum / (b - a) / 255 : 0;
+      };
       graphRef.current = { ctx };
+      stateRef.current.getBands = () => {
+        analyser.getByteFrequencyData(freq);
+        return { low: bandAvg(100, 700), mid: bandAvg(700, 2500), high: bandAvg(2500, 6000) };
+      };
       stateRef.current.getLevel = () => {
         analyser.getByteTimeDomainData(buffer);
         let sum = 0;
@@ -128,20 +153,23 @@ export function useIntroAudio(config) {
 
   const play = useCallback(async () => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !audio.paused) return; // already playing: never start a second playback
     try {
-      if (!srcSetRef.current) {
-        audio.src = url;
-        srcSetRef.current = true;
+      if (!cuesRequestedRef.current) {
+        cuesRequestedRef.current = true;
         loadCues();
       }
+      stoppedRef.current = false;
       setStatus((s) => (s === 'paused' ? s : 'loading'));
       setupAnalyser();
+      // Start the audio and wake the Web Audio context together: no extra wait.
       if (graphRef.current && graphRef.current.ctx.state === 'suspended') {
-        await graphRef.current.ctx.resume();
+        graphRef.current.ctx.resume().catch(() => {});
       }
       await audio.play();
-    } catch {
+    } catch (err) {
+      // pause()/stop() while play() is still resolving rejects with AbortError: not a failure.
+      if (err && err.name === 'AbortError') return;
       stateRef.current.playing = false;
       setStatus('error');
     }
@@ -149,6 +177,17 @@ export function useIntroAudio(config) {
 
   const pause = useCallback(() => {
     if (audioRef.current) audioRef.current.pause();
+  }, []);
+
+  // Stop: silence immediately, rewind, and drop the speaking state in the same call.
+  const stop = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    stoppedRef.current = !audio.paused;
+    stateRef.current.playing = false;
+    audio.pause();
+    audio.currentTime = 0;
+    if (audio.paused && !stoppedRef.current) setStatus('idle');
   }, []);
 
   const toggle = useCallback(() => {
@@ -162,5 +201,5 @@ export function useIntroAudio(config) {
     play();
   }, [play]);
 
-  return { enabled, status, element, stateRef, play, pause, toggle, replay };
+  return { enabled, status, element, stateRef, play, pause, stop, toggle, replay };
 }

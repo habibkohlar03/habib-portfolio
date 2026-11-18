@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { ArrowDown, ArrowRight, Mail } from 'lucide-react';
 import { site } from '../data/site';
 import { assets } from '../data/assets';
@@ -6,24 +6,30 @@ import { useQualityTier } from '../hooks/useQualityTier';
 import AvatarFallback from '../components/three/AvatarFallback';
 import SceneErrorBoundary from '../components/three/SceneErrorBoundary';
 import IntroControls from '../components/avatar/IntroControls';
-import { useIntroPlayback } from '../components/avatar/useIntroPlayback';
+import { useIntroAudio } from '../audio/useIntroAudio';
 
-// The Talking Avatar SDK and three.js are only fetched here, after first paint.
-const TalkingAvatarStage = lazy(() => import('../components/avatar/TalkingAvatarStage'));
+// three.js and the avatar are only fetched here, after first paint.
+const AvatarScene = lazy(() => import('../components/three/AvatarScene'));
 
 const CAPTIONS = {
   loading: 'Loading avatar…',
-  ready: 'Open-source Talking Avatar SDK',
+  visemes: 'Full-body avatar · lip-sync from timeline',
+  amplitude: 'Full-body avatar · mouth follows the voice',
+  none: 'Full-body avatar · body animation only (this model has no facial morph targets)',
+  placeholder: 'Placeholder avatar',
   failed: 'Avatar unavailable · audio-only introduction',
   off: '3D avatar off (reduced motion, data saver or no WebGL) · audio-only introduction',
 };
 
+const INTRO_STATUS = { loading: 'starting', playing: 'playing', error: 'error' };
+
 export default function Hero() {
   const quality = useQualityTier();
   const [mount3D, setMount3D] = useState(false);
-  const [avatarState, setAvatarState] = useState('loading'); // loading | ready | failed
-  const avatarRef = useRef(null);
-  const onAvatarReady = useCallback(() => setAvatarState('ready'), []);
+  const [avatarState, setAvatarState] = useState('loading'); // loading | visemes | amplitude | none | placeholder | failed
+  const onCapabilities = useCallback((caps) => {
+    setAvatarState(caps.mode === 'load-failed' ? 'failed' : caps.mode);
+  }, []);
   const onAvatarFailed = useCallback(() => setAvatarState('failed'), []);
 
   // Mount the 3D scene when the browser is idle so text and CTAs paint first.
@@ -45,7 +51,7 @@ export default function Hero() {
 
   const show3D = quality !== 'static' && mount3D;
   const avatarActive = show3D && avatarState !== 'failed';
-  const intro = useIntroPlayback({ avatarRef, url: assets.voice.url, avatarActive });
+  const intro = useIntroAudio(assets.voice);
   const caption = quality === 'static' ? CAPTIONS.off : CAPTIONS[avatarState];
 
   return (
@@ -98,8 +104,8 @@ export default function Hero() {
           <div className="hero-in mt-8" style={{ '--d': '400ms' }}>
             <IntroControls
               enabled={assets.voice.enabled}
-              status={intro.status}
-              message={intro.message}
+              status={INTRO_STATUS[intro.status] ?? 'idle'}
+              message={intro.status === 'error' ? 'The voice introduction could not be played.' : ''}
               onPlay={intro.play}
               onStop={intro.stop}
               transcript={assets.voice.transcript}
@@ -134,11 +140,12 @@ export default function Hero() {
             {avatarActive ? (
               <SceneErrorBoundary fallback={<AvatarFallback />} onError={onAvatarFailed}>
                 <Suspense fallback={<AvatarFallback />}>
-                  <TalkingAvatarStage
-                    ref={avatarRef}
-                    modelUrl={assets.sdk.modelUrl}
-                    onReady={onAvatarReady}
-                    onFailed={onAvatarFailed}
+                  <AvatarScene
+                    quality={quality}
+                    audio={intro.stateRef}
+                    avatar={assets.avatar}
+                    hasTimeline={Boolean(assets.voice.visemeTimeline)}
+                    onCapabilities={onCapabilities}
                   />
                 </Suspense>
               </SceneErrorBoundary>

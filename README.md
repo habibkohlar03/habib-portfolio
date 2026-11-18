@@ -49,43 +49,41 @@ The form is disabled and says so until you set an endpoint in `src/data/contact.
 
 Until step 4, the success message says the submission was *accepted by the form service* and never claims the message was delivered.
 
-## Talking avatar and voice introduction (Talking Avatar SDK)
+## Full-body animated assistant and voice introduction
 
-The hero uses the free, open-source [Talking Avatar SDK](https://talking-avatar.dev/open-source-talking-avatar)
-(`@interviewflowai/talking-avatar`, MIT) with its built-in male avatar (`AVATARS.male`). It provides the
-facial blendshapes and lip-sync that the old Avaturn `avatar.glb` lacked. No paid APIs or services are used.
+The hero shows `public/models/avatar.glb` (your Avaturn model) as a full-body character, head to feet.
 
-How it works:
+Sequence: **run in from the background -> slow to a stop facing the visitor -> idle -> talking (while `intro.mp3` plays) -> idle again**. The blends are continuous (no jumps). **Stop** silences the audio and ends the speaking animation within a fraction of a second.
 
-- `src/components/avatar/TalkingAvatarStage.jsx` renders the SDK's `TalkingAvatarView` (lazy-loaded after first paint).
-- **Play Introduction** calls the SDK's `speak('/audio/intro.mp3')`. The avatar plays the audio itself and its mouth is driven from the audio. **Stop** calls `stopSpeaking()`.
-- If the clip fails to load or decode, a clear message and a **Try again** button are shown.
-- If the avatar cannot be shown (no WebGL, reduced motion, data saver, or it failed to load), the same buttons play the audio on its own, so the introduction still works.
-- The playback logic lives in `src/components/avatar/introPlayback.js` (plain JS, unit-testable).
+- `src/components/three/FullBodyAvatar.jsx`: loads the GLB, applies the pose to the skeleton every frame, drives the face.
+- `src/components/avatar/motion/`: plain-JS motion logic (entrance path, run cycle, idle, speaking stance, five different gestures chosen by a director that never repeats the last two, blink scheduler). Unit-tested without three.js.
+- `src/audio/useIntroAudio.js`: preloads the 300 KB `intro.mp3`, so Play starts at once; `play / stop`, duplicate-playback guard, Web Audio level and frequency bands.
+- Body motion is **procedural** (code, not motion-capture clips): it moves the Avaturn skeleton directly.
 
-Setup after unzipping:
+### What the model can and cannot do (checked on the real file)
 
-```bash
-npm install          # installs the SDK + three, and copies viseme-model.bin to public/sdk/
-npm run dev
-```
+The exported GLB has a full skeleton (52 joints) but **no morph targets (blendshapes)**, no jaw or eye bones, and no animation clips. So today:
 
-`npm install` runs `scripts/copy-viseme-model.mjs`, which copies the SDK's lip-sync model from
-`node_modules/@interviewflowai/talking-avatar/dist/viseme-model.bin` to `public/sdk/viseme-model.bin`
-(re-run with `npm run sync-sdk`). **Commit `public/sdk/viseme-model.bin`** so Vercel serves it from your domain.
-To use the SDK's jsDelivr copy instead, set `assets.sdk.modelUrl = null` in `src/data/assets.js`.
+| Feature | Status |
+|---|---|
+| Full body, run, idle, gestures, head motion | works from the skeleton |
+| Lip-sync | **not possible on this file**: the mouth stays still. The caption under the avatar says so. Nothing is faked |
+| Blinking | **not possible** for the same reason (needs `eyeBlinkLeft/Right`) |
 
-`package.json` lists the SDK as `"latest"`. After your first install, run
-`npm install @interviewflowai/talking-avatar@latest` once so npm records a normal version range, then commit
-`package-lock.json`.
+Lip-sync and blinking switch on automatically when the GLB has real morph targets:
 
-Files: the voice file is `public/audio/intro.mp3` (switch: `assets.voice.enabled`). An optional transcript can go
-in `assets.voice.transcript`.
+1. Re-export from Avaturn with blendshapes (their "Type 2" / ARKit-compatible export), or use any GLB with ARKit (`jawOpen`, `mouthFunnel`, ...) or Oculus `viseme_*` targets. Replace `public/models/avatar.glb`.
+2. Optional, for accurate sync: run [Rhubarb Lip Sync](https://github.com/DanielSWolf/rhubarb-lip-sync) on `intro.mp3` (`rhubarb -f json intro.mp3 -o public/audio/intro.rhubarb.json`) and set `assets.voice.visemeTimeline = '/audio/intro.rhubarb.json'`. Without it the mouth is an *approximation* driven by voice loudness (not phoneme-accurate).
 
-### Legacy files (not used by the hero any more)
+The free Talking Avatar SDK used in the previous version was removed: it only animates a head (no full body, no body animation, no camera/scene access), so it cannot do this. `npm install` no longer copies any SDK file.
 
-`public/models/avatar.glb` (Avaturn export, T-pose, no facial blendshapes), `src/components/three/*`,
-`src/audio/*`. They are kept untouched. Delete `avatar.glb` if you want to save 4 MB in the deployed site.
+Setup: `npm install`, `npm run dev`, `npm run build`.
+
+### Performance
+
+One WebGL canvas; the 3D chunk loads when the browser is idle after first paint; rendering stops when the hero is off-screen; the pixel ratio is capped and steps down if the frame rate drops; phones/weak devices use the `low` tier (no particles, no cursor look). Static tier (no WebGL, reduced motion, data saver) keeps the audio-only introduction. Not yet measured on a real 4 GB machine.
+
+Tuning: `assets.avatar` (height, offset, pose), `assets.stage` (framing), entrance timing in `src/components/avatar/motion/director.js`.
 
 ## Performance and accessibility notes
 

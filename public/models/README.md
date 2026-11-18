@@ -1,7 +1,6 @@
 # 3D avatar
 
-`avatar.glb` is the Avaturn export used by the hero scene (see `src/data/assets.js`).
-
-To replace it, overwrite this file (or change `assets.avatar.url`). The model is
-auto-scaled and stood on the platform. See the main README for what the current
-file contains and what a replacement needs for real lip-sync.
+`avatar.glb` is the Avaturn export shown full-body in the hero (see `src/data/assets.js`).
+It has a skeleton but no blendshapes, so the mouth and eyes cannot animate. To enable
+lip-sync and blinking, replace it with an export that includes ARKit or `viseme_*`
+morph targets. See the main README.
