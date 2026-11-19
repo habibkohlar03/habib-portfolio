@@ -114,7 +114,7 @@ export default function Projects() {
       index={5}
       label="Featured Projects"
       title="Selected work."
-      intro="Websites and tools I have worked on. Detailed case information and screenshots are being added."
+      intro="Websites and tools I have worked on. Open any project to see the live site."
     >
       <ul className="grid gap-6 md:grid-cols-2">
         {projects.map((project, index) => (

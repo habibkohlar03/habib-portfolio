@@ -13,7 +13,7 @@
 //
 // A project card stops showing "Placeholder" once `description` is filled in.
 
-const project = (id, name, url = null) => ({
+const project = (id, name, url = null, image = null) => ({
   id,
   name,
   category: null,
@@ -21,16 +21,16 @@ const project = (id, name, url = null) => ({
   role: null,
   tech: [],
   url,
-  image: null,
+  image,
 });
 
 export const projects = [
-  project('leadzsoft', 'LeadzSoft'),
-  project('reflax', 'Reflax'),
-  project('ecoxent', 'Ecoxent'),
-  project('gulzar-sons-furniture', 'GulzarSonsFurniture'),
-  project('brightgate', 'Brightgate'),
-  project('aipilot-ai', 'AIPilot.ai'),
-  project('jmc-cleanup-services', 'JMC Cleanup Services', 'https://jmccleanup.com.au/'),
-  project('all-roofing-calculators', 'All Roofing Calculators', 'https://alltypescalculators.online/'),
+  project('leadzsoft', 'LeadzSoft', 'https://leadzsoft.co/', '/images/projects/leadzsoft.webp'),
+  project('reflax', 'Reflax', 'https://reflax.org/', '/images/projects/reflax.webp'),
+  project('ecoxent', 'Ecoxent', 'https://ecoxent.com/', '/images/projects/ecoxent.webp'),
+  project('gulzar-sons-furniture', 'GulzarSonsFurniture', 'https://gulzarsonsfurniture.com/', '/images/projects/gulzar-sons-furniture.webp'),
+  project('brightgate', 'Brightgate', 'https://brightgate.ae/', '/images/projects/brightgate.webp'),
+  project('aipilot-ai', 'AIPilot.ai', 'https://aipilot.io/', '/images/projects/aipilot.webp'),
+  project('jmc-cleanup-services', 'JMC Cleanup Services', 'https://jmccleanup.com.au/', '/images/projects/jmc-cleanup.webp'),
+  project('all-roofing-calculators', 'All Roofing Calculators', 'https://alltypescalculators.online/', '/images/projects/all-types-calculators.webp'),
 ];

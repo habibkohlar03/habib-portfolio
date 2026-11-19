@@ -23,8 +23,8 @@ export const contactForm = {
 // so there are never dead links. Paste the full profile URL for each one.
 export const socials = {
   linkedin: 'https://www.linkedin.com/in/habib-ullah-wp/',
-  instagram: '',
-  facebook: '',
-  tiktok: '',
-  snapchat: '',
+  instagram: 'https://www.instagram.com/kohlar03/',
+  facebook: 'https://www.facebook.com/habib.ullah.517576',
+  tiktok: 'https://www.tiktok.com/@kohlar03',
+  snapchat: 'https://www.snapchat.com/add/kohlar03',
 };

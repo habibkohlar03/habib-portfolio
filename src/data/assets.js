@@ -13,7 +13,9 @@ export const assets = {
     // Target standing height in scene units. The model is auto-scaled to this.
     height: 1.75, // full body, head to feet
     // Extra rotation around the vertical axis, in radians (0 = facing the camera).
-    rotationY: 0,
+    // The avatar's idle clip bakes in a ~31 deg turn on the hips, so +0.54 rad (~31 deg)
+    // cancels it and the avatar faces the visitor straight on.
+    rotationY: 0.54,
     // Nudge the model on the platform: [x, y, z] in scene units.
     offset: [0, 0, 0],
 
