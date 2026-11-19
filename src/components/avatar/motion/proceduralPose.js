@@ -160,25 +160,6 @@ export const GESTURES = {
     }
     return g;
   },
-  // Friendly wave with the right hand: "hello".
-  wave: (p, t = 0) => {
-    const g = {};
-    set(g, 'RightArm', -0.35 * p, 0, -1.45 * p);
-    set(g, 'RightForeArm', 0, 0, -(1.15 + 0.3 * Math.sin(t * 11)) * p);
-    set(g, 'RightHand', 0, 0, 0.15 * Math.sin(t * 11) * p);
-    set(g, 'Head', 0.03 * p, -0.08 * p);
-    return g;
-  },
-  // Open right hand offered toward the visitor, small nod: "let's talk / get in touch".
-  invite: (p) => {
-    const g = {};
-    set(g, 'RightArm', -0.55 * p, 0, -0.45 * p);
-    set(g, 'RightForeArm', -0.9 * p, -0.5 * p, 0);
-    set(g, 'RightHand', -0.25 * p);
-    set(g, 'Spine2', 0, -0.08 * p);
-    set(g, 'Head', 0.08 * p);
-    return g;
-  },
 };
 
 export const GESTURE_NAMES = Object.keys(GESTURES);
@@ -194,7 +175,7 @@ export const GESTURE_NAMES = Object.keys(GESTURES);
 //   look       { yaw, pitch } head turn toward the visitor's cursor (radians)
 //   clipIdle   true when a motion-capture idle clip already provides the standing pose
 
-export function buildPose({ t = 0, runPhase = 0, runWeight = 0, speak = 0, level = 0, gesture = null, look = null, clipIdle = false, flipPose = null }) {
+export function buildPose({ t = 0, runPhase = 0, runWeight = 0, speak = 0, level = 0, gesture = null, look = null, clipIdle = false }) {
   // With a real idle clip driving the body, only the additive layers below are applied on top of it.
   const standing = clipIdle ? {} : idleMotion(t);
 
@@ -212,7 +193,6 @@ export function buildPose({ t = 0, runPhase = 0, runWeight = 0, speak = 0, level
   if (gesture && gesture.p > 0 && GESTURES[gesture.name]) {
     pose = addPose(pose, GESTURES[gesture.name](gesture.p, t));
   }
-  if (flipPose) pose = addPose(pose, flipPose);
   if (runWeight > 0) pose = mixPose(pose, runMotion(runPhase), smooth(runWeight));
 
   if (look) {

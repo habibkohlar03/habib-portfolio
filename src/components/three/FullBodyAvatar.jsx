@@ -18,7 +18,6 @@ import { BONE_ORDER, buildPose, deltaQuaternion } from '../avatar/motion/procedu
 import { createDirector } from '../avatar/motion/director';
 import { createBlinkScheduler } from '../avatar/motion/blink';
 import { loadClip } from '../avatar/motion/clips';
-import { assets } from '../../data/assets';
 
 /**
  * Full-body animated assistant (Avaturn T2 model).
@@ -81,11 +80,7 @@ export default function FullBodyAvatar({ config, audio, hasTimeline, onCapabilit
     return list;
   }, [scene]);
 
-  const entranceMode = config.entrance === 'run' ? 'run' : 'backflip';
-  const director = useMemo(
-    () => createDirector({ mode: entranceMode, gestureCues: assets.voice.gestureCues }),
-    [entranceMode],
-  );
+  const director = useMemo(() => createDirector(), []);
   const blinker = useMemo(() => createBlinkScheduler(), []);
   const weights = useRef({});
   const gaze = useRef({ x: 0, y: 0, tx: 0, ty: 0, next: 1.5 });
@@ -183,7 +178,7 @@ export default function FullBodyAvatar({ config, audio, hasTimeline, onCapabilit
     const loud = speaking ? a.getLevel() : 0;
     level.current.env = THREE.MathUtils.damp(level.current.env, loud, loud > level.current.env ? 18 : 6, dt);
 
-    const step = director.update(dt, { speaking, level: loud, time: speaking ? a.getTime() : 0 });
+    const step = director.update(dt, { speaking, level: loud });
     const look = enableLook && !step.entering ? { yaw: pointer.x * 0.5, pitch: -pointer.y * 0.2 } : null;
     const { deltas, bob } = buildPose({
       t: state.clock.elapsedTime,
@@ -194,21 +189,9 @@ export default function FullBodyAvatar({ config, audio, hasTimeline, onCapabilit
       gesture: step.gesture,
       look,
       clipIdle,
-      flipPose: step.flip ? step.flip.pose : null,
     });
 
-    if (root.current) {
-      if (step.flip) {
-        // Backflip: rotate about the hips (not the feet) so the body turns in place.
-        const pivot = config.height * step.flipPivot;
-        const th = step.flip.angle;
-        root.current.rotation.x = th;
-        root.current.position.set(0, pivot - pivot * Math.cos(th) + step.flip.y, -pivot * Math.sin(th));
-      } else {
-        root.current.rotation.x = 0;
-        root.current.position.set(0, bob * prepared.scale, step.z);
-      }
-    }
+    if (root.current) root.current.position.set(0, bob * prepared.scale, step.z);
 
     const c = clips.current;
     if (c) {
@@ -323,7 +306,7 @@ export default function FullBodyAvatar({ config, audio, hasTimeline, onCapabilit
   const [ox = 0, oy = 0, oz = 0] = config.offset || [];
 
   return (
-    <group ref={root} position={[0, 0, entranceMode === 'run' ? -9 : 0]}>
+    <group ref={root} position={[0, 0, -9]}>
       <group position={[ox, prepared.y + oy, oz]} rotation={[0, config.rotationY || 0, 0]} scale={prepared.scale}>
         <primitive object={scene} />
       </group>
