@@ -76,6 +76,7 @@ function ContactForm() {
   const connected = Boolean(contactForm.endpoint);
   const [status, setStatus] = useState('idle'); // idle | sending | sent | error
   const [errors, setErrors] = useState({});
+  const [errorMessage, setErrorMessage] = useState('');
 
   if (!connected) {
     return (
@@ -105,6 +106,7 @@ function ContactForm() {
     if (Object.keys(nextErrors).length) return;
 
     setStatus('sending');
+    setErrorMessage('');
     try {
       const response = await fetch(contactForm.endpoint, {
         method: 'POST',
@@ -117,16 +119,21 @@ function ContactForm() {
           message: data.message.trim(),
         }),
       });
-      if (!response.ok) throw new Error(`Form service responded with ${response.status}`);
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error || `Form service responded with ${response.status}`);
+      }
       form.reset();
+      setErrors({});
       setStatus('sent');
-    } catch {
+    } catch (err) {
+      setErrorMessage(err instanceof Error && !(err instanceof TypeError) ? err.message : '');
       setStatus('error');
     }
   };
 
   return (
-    <form onSubmit={onSubmit} noValidate className="hud-card space-y-5 p-6 sm:p-8" aria-label="Contact form">
+    <form onSubmit={onSubmit} noValidate className="hud-card relative space-y-5 p-6 sm:p-8" aria-label="Contact form">
       <div>
         <label htmlFor="cf-name" className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-400">
           Name
@@ -230,7 +237,10 @@ function ContactForm() {
           </p>
         ) : null}
         {status === 'error' ? (
-          <p className="text-amber-glow">Something went wrong and your message may not have been sent. Please try again or use a direct contact method.</p>
+          <p className="text-amber-glow">
+            {errorMessage || 'Something went wrong and your message may not have been sent.'} Please try again or use a direct
+            contact method.
+          </p>
         ) : null}
       </div>
     </form>

@@ -13,25 +13,19 @@ import {
   morphNames,
   setMorph,
 } from '../../audio/lipsync';
-import { findBone, lowerArms } from './avatarPose';
-import { BONE_ORDER, buildPose, deltaQuaternion } from '../avatar/motion/proceduralPose';
-import { createDirector } from '../avatar/motion/director';
+import { lowerArms } from './avatarPose';
 import { createBlinkScheduler } from '../avatar/motion/blink';
-import { loadClip } from '../avatar/motion/clips';
 
 /**
- * Full-body animated assistant (Avaturn T2 model).
+ * Full-body avatar (Avaturn T2 model).
  *
  * Body
- *   - the GLB's own standing-idle clip (rotation tracks only) drives the resting pose, so the
- *     arms hang naturally; if a model has no clip, the old procedural idle is used instead
- *   - the entrance run, the speaking stance and the gestures are procedural poses layered on top
- *     (src/components/avatar/motion); optional Mixamo clips can replace them (assets.avatar.animations)
+ *   - only the GLB's own standing-idle clip moves the body. No code-driven movement
+ *     (no entrance run, gestures, speaking stance or bone posing).
+ *   - if a model has no clip, the arms are lowered once from the T-pose and it stands still
  * Face (only real morph targets of the GLB are driven)
- *   - mouth: Rhubarb-format timeline -> Oculus viseme_* targets (or ARKit mouth shapes)
- *   - no timeline: approximate mouth from the voice spectrum, and the caption says so
- *   - blinking, small eye saccades and gaze toward the cursor (eyeLook*), brows and a light smile
- *   - when speech stops (end or Stop) every mouth/expression weight eases back to neutral
+ *   - mouth: Rhubarb-format timeline -> viseme_* targets (or ARKit mouth shapes), or the voice spectrum
+ *   - blinking, small eye saccades, gaze toward the cursor, brows and a light smile
  */
 export default function FullBodyAvatar({ config, audio, hasTimeline, onCapabilities, enableLook }) {
   const gltf = useGLTF(config.url, Boolean(config.draco));
@@ -39,9 +33,7 @@ export default function FullBodyAvatar({ config, audio, hasTimeline, onCapabilit
   const pointer = useThree((s) => s.pointer);
 
   const embeddedClip = config.useEmbeddedIdle !== false && gltf.animations && gltf.animations.length ? gltf.animations[0] : null;
-  const anim = config.animations || {};
-  const wantExternal = Boolean(anim.run && anim.idle);
-  const clipIdle = Boolean(embeddedClip) && !wantExternal;
+  const clipIdle = Boolean(embeddedClip);
 
   const prepared = useMemo(() => {
     const scene = cloneSkinned(gltf.scene);
@@ -71,16 +63,6 @@ export default function FullBodyAvatar({ config, audio, hasTimeline, onCapabilit
     return pair.length ? pair : caps.blink;
   }, [caps]);
 
-  const bones = useMemo(() => {
-    const list = [];
-    for (const name of BONE_ORDER) {
-      const bone = findBone(scene, name);
-      if (bone) list.push({ name, bone, rest: bone.quaternion.clone() });
-    }
-    return list;
-  }, [scene]);
-
-  const director = useMemo(() => createDirector(), []);
   const blinker = useMemo(() => createBlinkScheduler(), []);
   const weights = useRef({});
   const gaze = useRef({ x: 0, y: 0, tx: 0, ty: 0, next: 1.5 });
@@ -94,8 +76,8 @@ export default function FullBodyAvatar({ config, audio, hasTimeline, onCapabilit
   }, [caps, hasTimeline]);
 
   useEffect(() => {
-    if (onCapabilities) onCapabilities({ mode, blink: caps.blink.length > 0, bones: bones.length, idleClip: clipIdle });
-  }, [mode, caps, bones.length, clipIdle, onCapabilities]);
+    if (onCapabilities) onCapabilities({ mode, blink: caps.blink.length > 0, idleClip: clipIdle });
+  }, [mode, caps, clipIdle, onCapabilities]);
 
   // ---- idle clip embedded in the GLB (drives the standing pose) ----
   const idleMixer = useRef(null);
@@ -113,37 +95,6 @@ export default function FullBodyAvatar({ config, audio, hasTimeline, onCapabilit
     };
   }, [clipIdle, embeddedClip, scene]);
 
-  // ---- optional external motion clips (Mixamo) ----
-  const clips = useRef(null);
-  const talkKey = (anim.talk || []).join('|');
-  useEffect(() => {
-    if (!wantExternal) return undefined;
-    let dead = false;
-    const mixer = new THREE.AnimationMixer(scene);
-    Promise.all([loadClip(anim.run), loadClip(anim.idle), ...(anim.talk || []).map(loadClip)])
-      .then(([run, idle, ...talk]) => {
-        if (dead) return;
-        const make = (clip) => {
-          const action = mixer.clipAction(clip);
-          action.setEffectiveWeight(0);
-          action.play();
-          return action;
-        };
-        clips.current = { mixer, run: make(run), idle: make(idle), talk: talk.map(make), tw: talk.map(() => 0), idx: 0, last: 0 };
-      })
-      .catch((err) => {
-        // eslint-disable-next-line no-console
-        console.warn('[avatar] motion clips unavailable, using the built-in idle:', err);
-      });
-    return () => {
-      dead = true;
-      clips.current = null;
-      mixer.stopAllAction();
-      mixer.uncacheRoot(scene);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wantExternal, anim.run, anim.idle, talkKey, scene]);
-
   // ---- free GPU/CPU memory when the avatar is removed ----
   useEffect(
     () => () => {
@@ -160,76 +111,16 @@ export default function FullBodyAvatar({ config, audio, hasTimeline, onCapabilit
     [scene, config.url],
   );
 
-  const tmp = useMemo(
-    () => ({
-      parentQ: new THREE.Quaternion(),
-      parentInv: new THREE.Quaternion(),
-      rootInv: new THREE.Quaternion(),
-      delta: new THREE.Quaternion(),
-      base: new THREE.Quaternion(),
-      out: new THREE.Quaternion(),
-    }),
-    [],
-  );
-
   useFrame((state, dt) => {
     const a = audio.current;
     const speaking = Boolean(a.playing);
     const loud = speaking ? a.getLevel() : 0;
     level.current.env = THREE.MathUtils.damp(level.current.env, loud, loud > level.current.env ? 18 : 6, dt);
 
-    const step = director.update(dt, { speaking, level: loud });
-    const look = enableLook && !step.entering ? { yaw: pointer.x * 0.5, pitch: -pointer.y * 0.2 } : null;
-    const { deltas, bob } = buildPose({
-      t: state.clock.elapsedTime,
-      runPhase: step.runPhase,
-      runWeight: step.runWeight,
-      speak: step.speak,
-      level: loud,
-      gesture: step.gesture,
-      look,
-      clipIdle,
-    });
+    const look = enableLook ? { yaw: pointer.x, pitch: pointer.y } : null;
 
-    if (root.current) root.current.position.set(0, bob * prepared.scale, step.z);
-
-    const c = clips.current;
-    if (c) {
-      // External motion-capture clips drive the body; the director supplies weights.
-      const run = step.runWeight;
-      const talkAvail = c.talk.length > 0;
-      const talkW = talkAvail ? (1 - run) * step.speak : 0;
-      c.run.setEffectiveWeight(run);
-      c.run.timeScale = 0.7 + 0.3 * run;
-      c.idle.setEffectiveWeight((1 - run) * (1 - (talkAvail ? step.speak : 0)));
-      if (talkAvail) {
-        if (c.talk[c.idx].time < c.last && c.talk.length > 1) c.idx = (c.idx + 1) % c.talk.length;
-        c.last = c.talk[c.idx].time;
-        c.talk.forEach((action, i) => {
-          c.tw[i] = THREE.MathUtils.damp(c.tw[i], i === c.idx ? 1 : 0, 6, dt);
-          action.setEffectiveWeight(talkW * c.tw[i]);
-        });
-      }
-      c.mixer.update(dt);
-    } else {
-      if (idleMixer.current) idleMixer.current.update(dt); // standing pose from the GLB's own clip
-      // local' = parent^-1 * delta * parent * base, with `parent` measured relative to the avatar
-      // container so the delta is expressed in the character's own frame.
-      scene.updateMatrixWorld(true);
-      scene.getWorldQuaternion(tmp.rootInv).invert();
-      for (const { name, bone, rest } of bones) {
-        const d = deltas[name];
-        const base = clipIdle ? tmp.base.copy(bone.quaternion) : rest;
-        bone.quaternion.copy(base);
-        if (!d) continue;
-        bone.parent.getWorldQuaternion(tmp.parentQ).premultiply(tmp.rootInv);
-        tmp.parentInv.copy(tmp.parentQ).invert();
-        const [x, y, z, w] = deltaQuaternion(d);
-        tmp.delta.set(x, y, z, w);
-        tmp.out.copy(tmp.parentInv).multiply(tmp.delta).multiply(tmp.parentQ).multiply(base);
-        bone.quaternion.copy(tmp.out);
-      }
-    }
+    // The only body movement: the GLB's own idle clip.
+    if (idleMixer.current) idleMixer.current.update(dt);
 
     // ---- face: real morph targets only ----
     if (!meshes.length) return;
@@ -260,7 +151,7 @@ export default function FullBodyAvatar({ config, audio, hasTimeline, onCapabilit
 
     // expression: a friendly resting smile; brows lift on emphasis while speaking
     const env = level.current.env;
-    const speakW = step.speak;
+    const speakW = speaking ? 1 : 0;
     put('mouthSmileLeft', 0.1 + 0.08 * speakW);
     put('mouthSmileRight', 0.1 + 0.08 * speakW);
     put('browInnerUp', speakW * (0.1 + 0.9 * Math.min(1, env * 2.2)) * 0.35);
@@ -306,7 +197,7 @@ export default function FullBodyAvatar({ config, audio, hasTimeline, onCapabilit
   const [ox = 0, oy = 0, oz = 0] = config.offset || [];
 
   return (
-    <group ref={root} position={[0, 0, -9]}>
+    <group ref={root}>
       <group position={[ox, prepared.y + oy, oz]} rotation={[0, config.rotationY || 0, 0]} scale={prepared.scale}>
         <primitive object={scene} />
       </group>

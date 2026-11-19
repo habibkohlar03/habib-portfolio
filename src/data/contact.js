@@ -11,15 +11,12 @@ export const contact = {
   location: 'Lahore, Pakistan',
 };
 
-// Contact form. Not connected yet.
-// Works with any service that accepts a JSON POST and answers 2xx on success
-// (Formspree, Getform, Basin, a Vercel serverless function, etc.).
+// Contact form. Sends through the Vercel function in /api/contact (Resend), which emails the
+// message to the inbox set in CONTACT_TO_EMAIL (default habibwebdeveloper3@gmail.com).
+// The function answers 200 only after Resend accepted the email, so the success message is real.
 export const contactForm = {
-  endpoint: '', // e.g. 'https://formspree.io/f/xxxxxxx'. Empty = form disabled.
-  // Flip to true ONLY after you have submitted a real test message and
-  // confirmed it arrived in your inbox. Until then the form never says
-  // "message sent".
-  deliveryVerified: false,
+  endpoint: '/api/contact',
+  deliveryVerified: true,
 };
 
 // Social icons (Contact section and footer). An icon is shown only when its URL is filled in,

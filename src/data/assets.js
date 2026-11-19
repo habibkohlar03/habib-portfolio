@@ -17,19 +17,14 @@ export const assets = {
     // Nudge the model on the platform: [x, y, z] in scene units.
     offset: [0, 0, 0],
 
-    // The T2 export carries its own standing-idle clip, which drives the resting pose (arms
-    // down, weight shift). Set useEmbeddedIdle: false to ignore it. Only for a model WITHOUT a
-    // clip: the arms are lowered from a T-pose to `armSpreadDeg` instead.
+    // The avatar's own animation (the idle clip inside the GLB) is the only body movement.
+    // No code-driven motion. For a model WITHOUT a clip, the arms are lowered from a T-pose
+    // to `armSpreadDeg` and it stands still.
     useEmbeddedIdle: true,
     pose: { lowerArms: true, armSpreadDeg: 18 },
 
     // Set true only if you re-export the GLB with Draco compression.
     draco: false,
-    // Optional real motion-capture clips (Mixamo FBX or GLB, same-named bones: Hips, Spine, LeftArm...).
-    // Set BOTH run and idle to switch the body from procedural motion to these clips.
-    // Download run as "In Place". talk can list several clips; they are cycled while speaking.
-    // Example: { run: '/animations/run.fbx', idle: '/animations/idle.fbx', talk: ['/animations/talk1.fbx'] }
-    animations: { run: null, idle: null, talk: [] },
   },
 
   // Camera framing for the hero stage (scene units). The camera backs away

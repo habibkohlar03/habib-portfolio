@@ -38,16 +38,15 @@ Only information you provided is shown as fact. Anything missing is labelled on 
 - Contact: each empty method shows **"Not added yet"** (no broken links).
 - Experience, results, ratings and testimonials are never invented. No proficiency percentages are shown for skills.
 
-## Contact form (not connected yet)
+## Contact form (Resend)
 
-The form is disabled and says so until you set an endpoint in `src/data/contact.js`:
+The form posts to `api/contact.js` (Vercel serverless function), which emails the message through Resend.
 
-1. Create a form with a service that accepts a JSON POST (Formspree, Getform, Basin, or your own Vercel function).
-2. Put its URL in `contactForm.endpoint`.
-3. Run the site, submit a real test message, and confirm it **arrives in your inbox**.
-4. Only then set `contactForm.deliveryVerified = true`.
-
-Until step 4, the success message says the submission was *accepted by the form service* and never claims the message was delivered.
+- Vercel environment variable `RESEND_API_KEY` is required.
+- Optional: `CONTACT_TO_EMAIL` (default `habibwebdeveloper3@gmail.com`) and `CONTACT_FROM_EMAIL`
+  (default `Portfolio Contact <onboarding@resend.dev>`; with this sender Resend only delivers to the
+  email of the Resend account. Verify your own domain in Resend to use another sender).
+- `/api` does not run under `npm run dev`; test with `vercel dev` or on the deployed site.
 
 ## Design system (white + orange)
 
