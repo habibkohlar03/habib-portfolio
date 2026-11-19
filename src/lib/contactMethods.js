@@ -44,5 +44,5 @@ export function getContactMethods() {
       href: contact.fiverr || null,
       optional: true,
     },
-  ].filter((m) => !(m.optional && !m.href));
+  ].filter((m) => m.href);
 }

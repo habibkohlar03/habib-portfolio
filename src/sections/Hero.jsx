@@ -13,7 +13,7 @@ const AvatarScene = lazy(() => import('../components/three/AvatarScene'));
 
 const CAPTIONS = {
   loading: 'Loading avatar…',
-  visemes: 'Full-body avatar · lip-sync from a viseme timeline',
+  visemes: 'Full-body avatar · mouth follows a viseme timeline',
   amplitude: 'Full-body avatar · mouth follows the voice',
   none: 'Full-body avatar · body animation only (this model has no facial morph targets)',
   placeholder: 'Placeholder avatar',

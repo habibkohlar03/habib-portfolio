@@ -25,11 +25,6 @@ export const assets = {
 
     // Set true only if you re-export the GLB with Draco compression.
     draco: false,
-    // Optional real motion-capture clips (Mixamo FBX or GLB, same-named bones: Hips, Spine, LeftArm...).
-    // Set BOTH run and idle to switch the body from procedural motion to these clips.
-    // Download run as "In Place". talk can list several clips; they are cycled while speaking.
-    // Example: { run: '/animations/run.fbx', idle: '/animations/idle.fbx', talk: ['/animations/talk1.fbx'] }
-    animations: { run: null, idle: null, talk: [] },
   },
 
   // Camera framing for the hero stage (scene units). The camera backs away

@@ -1,4 +1,5 @@
 import { site, nav } from '../../data/site';
+import SocialLinks from '../ui/SocialLinks';
 
 export default function Footer() {
   return (
@@ -18,6 +19,7 @@ export default function Footer() {
             </a>
           ))}
         </nav>
+        <SocialLinks />
       </div>
       <p className="mx-auto mt-8 max-w-7xl px-5 font-mono text-[11px] text-slate-600 sm:px-8">
         © {new Date().getFullYear()} {site.name}. Built with React, Three.js and Tailwind CSS.

@@ -4,7 +4,7 @@
 export const contact = {
   email: '', // e.g. 'name@example.com'
   whatsapp: '', // international format, digits only, e.g. '923001234567'
-  linkedin: '', // full URL, e.g. 'https://www.linkedin.com/in/your-handle'
+  linkedin: 'https://www.linkedin.com/in/habib-ullah-wp/', // full URL, e.g. 'https://www.linkedin.com/in/your-handle'
   github: '', // full URL, e.g. 'https://github.com/your-handle'
   upwork: '', // optional, full URL
   fiverr: '', // optional, full URL
@@ -15,7 +15,7 @@ export const contact = {
 // Works with any service that accepts a JSON POST and answers 2xx on success
 // (Formspree, Getform, Basin, a Vercel serverless function, etc.).
 export const contactForm = {
-  endpoint: '', // e.g. 'https://formspree.io/f/xxxxxxx'. Empty = form disabled.
+  endpoint: '/api/contact', // Vercel function in /api/contact.js (needs RESEND_API_KEY in Vercel)
   // Flip to true ONLY after you have submitted a real test message and
   // confirmed it arrived in your inbox. Until then the form never says
   // "message sent".

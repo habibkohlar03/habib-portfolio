@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import SocialLinks from '../components/ui/SocialLinks';
 import { Github, Linkedin, Loader2, Mail, MapPin, MessageCircle, Send, Store } from 'lucide-react';
 import Section from '../components/ui/Section';
 import PlaceholderBadge from '../components/ui/Badge';
@@ -74,6 +75,8 @@ function ContactForm() {
   const connected = Boolean(contactForm.endpoint);
   const [status, setStatus] = useState('idle'); // idle | sending | sent | error
   const [errors, setErrors] = useState({});
+  const [errorText, setErrorText] = useState('');
+  const startedAt = useRef(Date.now());
 
   if (!connected) {
     return (
@@ -98,6 +101,7 @@ function ContactForm() {
     const nextErrors = {};
     if (!data.name || !data.name.trim()) nextErrors.name = 'Please enter your name.';
     if (!EMAIL_PATTERN.test(data.email || '')) nextErrors.email = 'Please enter a valid email address.';
+    if (!data.subject || data.subject.trim().length < 3) nextErrors.subject = 'Please enter a subject.';
     if (!data.message || data.message.trim().length < 10) nextErrors.message = 'Please write at least a short message.';
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
@@ -110,14 +114,20 @@ function ContactForm() {
         body: JSON.stringify({
           name: data.name.trim(),
           email: data.email.trim(),
-          projectType: data.projectType,
+          subject: `${data.subject.trim()} (${data.projectType})`,
           message: data.message.trim(),
+          website: data.website,
+          startedAt: startedAt.current,
         }),
       });
-      if (!response.ok) throw new Error(`Form service responded with ${response.status}`);
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok || !json.ok) throw new Error(json.error || 'Failed');
       form.reset();
+      startedAt.current = Date.now();
+      setErrorText('');
       setStatus('sent');
-    } catch {
+    } catch (err) {
+      setErrorText(err && err.message && err.message !== 'Failed' ? err.message : '');
       setStatus('error');
     }
   };
@@ -162,6 +172,26 @@ function ContactForm() {
         {errors.email ? (
           <p id="cf-email-err" className="mt-1.5 text-xs text-amber-glow">
             {errors.email}
+          </p>
+        ) : null}
+      </div>
+
+      <div>
+        <label htmlFor="cf-subject" className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-400">
+          Subject
+        </label>
+        <input
+          id="cf-subject"
+          name="subject"
+          type="text"
+          required
+          className={fieldClass}
+          aria-invalid={errors.subject ? 'true' : undefined}
+          aria-describedby={errors.subject ? 'cf-subject-err' : undefined}
+        />
+        {errors.subject ? (
+          <p id="cf-subject-err" className="mt-1.5 text-xs text-amber-glow">
+            {errors.subject}
           </p>
         ) : null}
       </div>
@@ -214,13 +244,11 @@ function ContactForm() {
       <div role="status" aria-live="polite" className="min-h-[1.5rem] text-sm">
         {status === 'sent' ? (
           <p className="text-signal-soft">
-            {contactForm.deliveryVerified
-              ? 'Thank you. Your message has been sent.'
-              : 'Your submission was accepted by the form service. For anything urgent, please also use one of the direct contact methods.'}
+            Thank you. Your message has been sent and I will reply by email soon.
           </p>
         ) : null}
         {status === 'error' ? (
-          <p className="text-amber-glow">Something went wrong and your message may not have been sent. Please try again or use a direct contact method.</p>
+          <p className="text-amber-glow">{errorText || 'Something went wrong and your message was not sent. Please try again or use a direct contact method.'}</p>
         ) : null}
       </div>
     </form>
@@ -239,6 +267,10 @@ export default function Contact() {
       <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
         <div data-reveal>
           <ContactMethods />
+          <div className="mt-6">
+            <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.16em] text-slate-500">Find me on</p>
+            <SocialLinks />
+          </div>
         </div>
         <div data-reveal data-reveal-delay="0.1">
           <ContactForm />
