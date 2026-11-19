@@ -1,5 +1,15 @@
+import { ArrowRight, Mail } from 'lucide-react';
 import Section from '../components/ui/Section';
 import { site } from '../data/site';
+import { projects } from '../data/projects';
+
+// Taken from the About text above: the four qualities Habib says his websites aim for.
+const focus = [
+  ['Visually professional', 'Clean, polished design that suits the business.'],
+  ['User-friendly', 'Easy to navigate and simple to use.'],
+  ['Responsive', 'Works properly across phones, tablets and desktops.'],
+  ['Technically reliable', 'Built carefully, reviewed and customized by hand.'],
+];
 
 export default function About() {
   const rows = [
@@ -11,11 +21,33 @@ export default function About() {
 
   return (
     <Section id="about" index={2} label="About" title="Reliable websites, built with a clear purpose.">
-      <div className="grid gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:gap-16">
-        <div className="space-y-5 text-base leading-relaxed text-slate-300 md:text-lg" data-reveal>
-          {site.about.map((paragraph) => (
-            <p key={paragraph}>{paragraph}</p>
-          ))}
+      <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-start lg:gap-14">
+        <div data-reveal>
+          <div className="space-y-5 text-base leading-relaxed text-slate-300 md:text-lg">
+            {site.about.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
+            ))}
+          </div>
+
+          <div className="mt-8 grid gap-3 sm:grid-cols-2">
+            {focus.map(([title, text]) => (
+              <div key={title} className="hud-card p-4">
+                <p className="font-display text-sm font-semibold text-white">{title}</p>
+                <p className="mt-1 text-sm leading-relaxed text-slate-400">{text}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <a href="#projects" className="btn-primary">
+              View {projects.length} featured projects
+              <ArrowRight size={16} aria-hidden="true" />
+            </a>
+            <a href="#contact" className="btn-ghost">
+              <Mail size={16} aria-hidden="true" />
+              Contact Me
+            </a>
+          </div>
         </div>
 
         <div className="space-y-6" data-reveal data-reveal-delay="0.1">
