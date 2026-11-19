@@ -13,7 +13,7 @@ const AvatarScene = lazy(() => import('../components/three/AvatarScene'));
 
 const CAPTIONS = {
   loading: 'Loading avatar…',
-  visemes: 'Full-body avatar · lip-sync from timeline',
+  visemes: 'Full-body avatar · lip-sync from a viseme timeline',
   amplitude: 'Full-body avatar · mouth follows the voice',
   none: 'Full-body avatar · body animation only (this model has no facial morph targets)',
   placeholder: 'Placeholder avatar',
@@ -37,11 +37,20 @@ export default function Hero() {
     if (quality === 'static') return undefined;
     let handle;
     let usedIdle = false;
+    // Once the page has painted, fetch the 3D code AND the model file in parallel (low priority),
+    // so the model is already in the HTTP cache by the time the scene needs it.
+    const start = () => {
+      if (assets.avatar.enabled) {
+        fetch(assets.avatar.url, { priority: 'low' }).catch(() => {});
+      }
+      import('../components/three/AvatarScene').catch(() => {});
+      setMount3D(true);
+    };
     if ('requestIdleCallback' in window) {
       usedIdle = true;
-      handle = window.requestIdleCallback(() => setMount3D(true), { timeout: 1500 });
+      handle = window.requestIdleCallback(start, { timeout: 800 });
     } else {
-      handle = window.setTimeout(() => setMount3D(true), 600);
+      handle = window.setTimeout(start, 400);
     }
     return () => {
       if (usedIdle) window.cancelIdleCallback(handle);

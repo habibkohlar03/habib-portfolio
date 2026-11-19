@@ -173,9 +173,11 @@ export const GESTURE_NAMES = Object.keys(GESTURES);
 //   level      0..1 voice loudness
 //   gesture    { name, p } or null
 //   look       { yaw, pitch } head turn toward the visitor's cursor (radians)
+//   clipIdle   true when a motion-capture idle clip already provides the standing pose
 
-export function buildPose({ t = 0, runPhase = 0, runWeight = 0, speak = 0, level = 0, gesture = null, look = null }) {
-  const standing = idleMotion(t);
+export function buildPose({ t = 0, runPhase = 0, runWeight = 0, speak = 0, level = 0, gesture = null, look = null, clipIdle = false }) {
+  // With a real idle clip driving the body, only the additive layers below are applied on top of it.
+  const standing = clipIdle ? {} : idleMotion(t);
 
   // Conversation stance: forearms come up a little, shoulders open, head lively.
   const talk = {};

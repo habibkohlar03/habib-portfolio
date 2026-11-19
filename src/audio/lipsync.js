@@ -47,6 +47,13 @@ export function collectMorphMeshes(root) {
  *  visemes: viseme morph targets present (need >= 5 for believable timeline sync)
  *  jaw:     a jaw/mouth-open morph target, if any
  */
+/** Every morph target name present on the avatar's meshes. */
+export function morphNames(meshes) {
+  const names = new Set();
+  for (const mesh of meshes) for (const key of Object.keys(mesh.morphTargetDictionary || {})) names.add(key);
+  return names;
+}
+
 export function detectLipSync(meshes) {
   const has = (key) => meshes.some((m) => key in m.morphTargetDictionary);
   const present = Object.values(RHUBARB_TO_VISEME).filter(has);

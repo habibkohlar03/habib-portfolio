@@ -151,6 +151,13 @@ export function useIntroAudio(config) {
       });
   }, [timelineUrl]);
 
+  // Prepare the viseme timeline now (small JSON), so nothing is fetched or parsed on click.
+  useEffect(() => {
+    if (!enabled || cuesRequestedRef.current) return;
+    cuesRequestedRef.current = true;
+    loadCues();
+  }, [enabled, loadCues]);
+
   const play = useCallback(async () => {
     const audio = audioRef.current;
     if (!audio || !audio.paused) return; // already playing: never start a second playback

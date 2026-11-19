@@ -57,43 +57,38 @@ Logo files are in `public/brand/` (`logo-full.webp`, `logo-mark.webp`, favicon a
 
 ## Full-body animated assistant and voice introduction
 
-The hero shows `public/models/avatar.glb` (your Avaturn model) as a full-body character, head to feet.
+The hero shows `public/models/avatar.glb` (your Avaturn **T2** model) as a full-body character, head to feet.
 
-Sequence: **run in from the background -> slow to a stop facing the visitor -> idle -> talking (while `intro.mp3` plays) -> idle again**. The blends are continuous (no jumps). **Stop** silences the audio and ends the speaking animation within a fraction of a second.
+Sequence: **run in from the background -> slow to a stop facing the visitor -> idle -> talking (while `intro.mp3` plays) -> idle again**, with continuous blends (no jumps). **Stop** silences the audio at once, rewinds it, returns the mouth and face to neutral and the body to idle.
 
-- `src/components/three/FullBodyAvatar.jsx`: loads the GLB, applies the pose to the skeleton every frame, drives the face.
-- `src/components/avatar/motion/`: plain-JS motion logic (entrance path, run cycle, idle, speaking stance, five different gestures chosen by a director that never repeats the last two, blink scheduler). Unit-tested without three.js.
-- `src/audio/useIntroAudio.js`: preloads the 300 KB `intro.mp3`, so Play starts at once; `play / stop`, duplicate-playback guard, Web Audio level and frequency bands.
-- Body motion is **procedural** (code, not motion-capture clips): it moves the Avaturn skeleton directly.
+### What the T2 file contains (checked on the real file)
 
-### What the model can and cannot do (checked on the real file)
-
-The exported GLB has a full skeleton (52 joints) but **no morph targets (blendshapes)**, no jaw or eye bones, and no animation clips. So today:
-
-| Feature | Status |
+| Feature | Result |
 |---|---|
-| Full body, run, idle, gestures, head motion | works from the skeleton |
-| Lip-sync | **not possible on this file**: the mouth stays still. The caption under the avatar says so. Nothing is faked |
-| Blinking | **not possible** for the same reason (needs `eyeBlinkLeft/Right`) |
+| Skeleton | 54 joints, Mixamo-style names, including `LeftEye` / `RightEye` |
+| Face morph targets | 72 in the original: all 15 Oculus `viseme_*`, ARKit shapes (`jawOpen`, `mouthFunnel`, `mouthPucker`, `eyeBlinkLeft/Right`, `eyeLook*`, `brow*`, `mouthSmile*`...). 56 kept after optimization |
+| Animation clips | one: `avaturn_animation`, an 8 s seamless standing idle (rotation tracks) |
+| Running clip | **none**: the run is procedural (see below) |
 
-Lip-sync and blinking switch on automatically when the GLB has real morph targets:
+### How it works
 
-1. Re-export from Avaturn with blendshapes (their "Type 2" / ARKit-compatible export), or use any GLB with ARKit (`jawOpen`, `mouthFunnel`, ...) or Oculus `viseme_*` targets. Replace `public/models/avatar.glb`.
-2. Optional, for accurate sync: run [Rhubarb Lip Sync](https://github.com/DanielSWolf/rhubarb-lip-sync) on `intro.mp3` (`rhubarb -f json intro.mp3 -o public/audio/intro.rhubarb.json`) and set `assets.voice.visemeTimeline = '/audio/intro.rhubarb.json'`. Without it the mouth is an *approximation* driven by voice loudness (not phoneme-accurate).
+- **Mouth**: the timeline in `public/audio/intro.visemes.json` (prefetched at page load) is read against the audio clock and drives the model's `viseme_*` targets. When the audio ends or Stop is pressed, every mouth/expression weight eases back to neutral within about 0.1 s.
+- **Timeline source**: Rhubarb Lip Sync cannot run in the build sandbox, so the shipped timeline comes from `tools/make-viseme-timeline.py`, an acoustic analysis of your recording (vowel formants, fricatives, closures, pauses). Pause/rest timing was cross-checked against an independent detector (96-99% agreement). Vowel and consonant shapes are heuristic, **not** phoneme recognition. For phoneme-level accuracy run the **Generate Rhubarb lip-sync timeline** workflow from the GitHub Actions tab (untested; it replaces the file).
+- **Face**: blinking (`eyeBlinkLeft/Right`), eye saccades and gaze toward the cursor (`eyeLook*`), brows lifting on emphasis, a light smile.
+- **Body**: the GLB's own idle clip provides the standing pose. The entrance run, the speaking stance and five gestures (chosen so the last two are never repeated) are procedural poses layered on top (`src/components/avatar/motion/`).
+- **Audio** (`src/audio/useIntroAudio.js`): `intro.mp3` and the timeline are loaded at page load, independent of the 3D scene. Play starts the audio immediately (no 3D or lip-sync work happens first). Duplicate playback is prevented and playback errors show a message.
 
-The free Talking Avatar SDK used in the previous version was removed: it only animates a head (no full body, no body animation, no camera/scene access), so it cannot do this. `npm install` no longer copies any SDK file.
+### Loading speed
 
-Setup: `npm install`, `npm run dev`, `npm run build`.
+- Model 13.97 MB -> 3.30 MB (about 2.3 MB gzipped), 56 morph targets stored sparsely, textures resized.
+- After first paint (browser idle) the page fetches the 3D code and the model file in parallel at low priority; until the model is ready the silhouette placeholder is shown. One WebGL canvas only; it pauses when scrolled out of view and the pixel ratio adapts to the frame rate. Resources are disposed when the avatar unmounts.
+- Phones and weak devices use the `low` tier (no particles, no cursor look); no-WebGL, reduced-motion and data-saver visitors get the audio-only introduction.
 
-### Performance
+Tuning: `assets.avatar` (height, offset), `assets.stage` (framing), entrance timing in `src/components/avatar/motion/entrance.js`.
 
-One WebGL canvas; the 3D chunk loads when the browser is idle after first paint; rendering stops when the hero is off-screen; the pixel ratio is capped and steps down if the frame rate drops; phones/weak devices use the `low` tier (no particles, no cursor look). Static tier (no WebGL, reduced motion, data saver) keeps the audio-only introduction. Not yet measured on a real 4 GB machine.
+### Real motion clips (optional)
 
-### Real motion clips (recommended for a realistic run)
-
-The built-in run and gestures are procedural (code). For natural motion-capture, add Mixamo clips: see `public/animations/README.md`. Clip playback is implemented but **not yet tested with a real clip**.
-
-Tuning: `assets.avatar` (height, offset, pose), `assets.stage` (framing), entrance timing in `src/components/avatar/motion/director.js`.
+For a natural *run*, add a Mixamo running clip: see `public/animations/README.md`. Clip playback is implemented but **not yet tested with a real clip**.
 
 ## Performance and accessibility notes
 

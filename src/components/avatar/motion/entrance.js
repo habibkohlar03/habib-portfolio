@@ -11,7 +11,7 @@
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 
-export function createEntrance({ distance = 9, duration = 2.6, decel = 0.9 } = {}) {
+export function createEntrance({ distance = 9, duration = 3.2, decel = 0.9 } = {}) {
   const cruise = distance / (duration - decel / 2);
   const cruiseEnd = duration - decel;
 

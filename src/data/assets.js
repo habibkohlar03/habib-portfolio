@@ -17,10 +17,10 @@ export const assets = {
     // Nudge the model on the platform: [x, y, z] in scene units.
     offset: [0, 0, 0],
 
-    // The Avaturn export is a T-pose with no animation clips. When the arms are
-    // more than a few degrees wider than `armSpreadDeg` from hanging straight
-    // down, they are lowered to that angle. Set `lowerArms: false` to keep the
-    // pose exactly as exported (e.g. once you export an A-pose or add clips).
+    // The T2 export carries its own standing-idle clip, which drives the resting pose (arms
+    // down, weight shift). Set useEmbeddedIdle: false to ignore it. Only for a model WITHOUT a
+    // clip: the arms are lowered from a T-pose to `armSpreadDeg` instead.
+    useEmbeddedIdle: true,
     pose: { lowerArms: true, armSpreadDeg: 18 },
 
     // Set true only if you re-export the GLB with Draco compression.
@@ -46,10 +46,10 @@ export const assets = {
   voice: {
     enabled: true, // /public/audio/intro.mp3
     url: '/audio/intro.mp3',
-    // Rhubarb Lip Sync output for intro.mp3 (JSON with `mouthCues`), e.g.
-    // '/audio/intro.rhubarb.json'. Gives accurate lip-sync on a model that has
-    // facial morph targets. Leave null until you have generated it.
-    visemeTimeline: null,
+    // Mouth-shape timeline for intro.mp3 (JSON with `mouthCues`, Rhubarb format), prefetched at
+    // page load. Generated from the recording by tools/make-viseme-timeline.py (acoustic
+    // analysis). Replace the file with Rhubarb Lip Sync output for phoneme-level accuracy.
+    visemeTimeline: '/audio/intro.visemes.json',
     // Optional plain-text transcript, shown to visitors for accessibility.
     transcript: '',
   },
