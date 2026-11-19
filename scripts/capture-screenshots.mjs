@@ -2,7 +2,7 @@
 // Run by .github/workflows/project-screenshots.yml. Sites that fail are skipped (the card keeps its branded panel).
 import { chromium } from 'playwright';
 import sharp from 'sharp';
-import { mkdir, readFile } from 'node:fs/promises';
+import { mkdir, readFile, access } from 'node:fs/promises';
 
 const src = await readFile(new URL('../src/data/projects.js', import.meta.url), 'utf8');
 const items = [...src.matchAll(/id:\s*'([^']+)',[\s\S]*?url:\s*(null|'([^']+)')/g)].filter((m) => m[3]).map((m) => ({ id: m[1], url: m[3] }));
@@ -10,7 +10,13 @@ await mkdir('public/images/projects', { recursive: true });
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+const exists = (f) => access(f).then(() => true, () => false);
 for (const { id, url } of items) {
+  // Existing screenshots are kept (set FORCE=1 to retake all).
+  if (!process.env.FORCE && (await exists(`public/images/projects/${id}.webp`))) {
+    console.log('keep', id);
+    continue;
+  }
   try {
     await page.goto(url, { waitUntil: 'networkidle', timeout: 45000 }).catch(() => page.goto(url, { waitUntil: 'load', timeout: 45000 }));
     await page.waitForTimeout(2500);

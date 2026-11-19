@@ -55,6 +55,14 @@ export const projects = [
     tech: ['WordPress', 'WooCommerce', 'Elementor'],
   }),
   project({
+    id: 'maxmag',
+    name: 'MaxMag',
+    category: 'Media & Digital Platform',
+    description: 'A global platform showcasing influencers, models, creative talent, branding, events, and digital marketing services.',
+    url: 'https://maxmag.net/',
+    tech: ['WordPress', 'Elementor'],
+  }),
+  project({
     id: 'all-roofing-calculators',
     name: 'All Roofing Calculators',
     category: 'Calculator Tools',

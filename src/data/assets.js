@@ -12,8 +12,11 @@ export const assets = {
 
     // Target standing height in scene units. The model is auto-scaled to this.
     height: 1.75, // full body, head to feet
-    // Extra rotation around the vertical axis, in radians (0 = facing the camera).
-    rotationY: 0,
+    // Extra rotation around the vertical axis, in radians (0 = the model's own forward axis).
+    // The Avaturn idle clip bakes a ~34 degree body turn into the Hips (measured on the clip: hips 32 deg,
+    // shoulders 36 deg, eyes 32 deg off the camera axis). 0.593 rad (34 deg) turns the character back so
+    // chest, face and feet point at the visitor. The GLB and its clip are unchanged.
+    rotationY: 0.593,
     // Nudge the model on the platform: [x, y, z] in scene units.
     offset: [0, 0, 0],
 
