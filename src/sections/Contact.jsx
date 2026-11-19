@@ -19,7 +19,7 @@ function ContactMethods() {
         const Icon = ICONS[method.id] ?? Mail;
         const inner = (
           <>
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-signal/30 bg-signal/[0.06] text-signal">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-soft text-signal">
               <Icon size={18} aria-hidden="true" />
             </span>
             <span className="min-w-0">
@@ -42,7 +42,7 @@ function ContactMethods() {
                 href={method.href}
                 target={method.id === 'email' ? undefined : '_blank'}
                 rel={method.id === 'email' ? undefined : 'noopener noreferrer'}
-                className="hud-card flex items-center gap-4 p-4 transition-colors hover:bg-ink-800/80"
+                className="hud-card flex items-center gap-4 p-4 transition-colors hover:bg-brand-soft/50"
               >
                 {inner}
               </a>
@@ -68,7 +68,7 @@ function ContactMethods() {
 }
 
 const fieldClass =
-  'mt-2 w-full rounded-md border border-white/10 bg-ink-950/70 px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:border-signal focus:outline-none focus:ring-1 focus:ring-signal';
+  'mt-2 w-full rounded-xl border border-white/20 bg-ink-950 px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/40';
 
 function ContactForm() {
   const connected = Boolean(contactForm.endpoint);

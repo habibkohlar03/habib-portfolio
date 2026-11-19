@@ -58,16 +58,20 @@ export default function Hero() {
     <section id="top" aria-labelledby="hero-title" className="relative isolate overflow-hidden">
       {/* ambient background */}
       <div aria-hidden="true" className="absolute inset-0 -z-10">
-        <div className="bg-grid absolute inset-0" />
-        <div className="absolute -right-40 top-10 h-[34rem] w-[34rem] rounded-full bg-signal/[0.09] blur-[120px]" />
-        <div className="absolute -left-40 bottom-0 h-[26rem] w-[26rem] rounded-full bg-amber-glow/[0.06] blur-[120px]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-ink-950 via-ink-950 to-ink-900" />
+        <div className="bg-grid absolute inset-0 opacity-60" />
+        <div className="absolute -right-32 top-0 h-[36rem] w-[36rem] rounded-full bg-brand/[0.16] blur-[110px]" />
+        <div className="absolute -left-48 bottom-0 h-[28rem] w-[28rem] rounded-full bg-brand/[0.08] blur-[120px]" />
       </div>
 
       <div className="mx-auto grid min-h-[100svh] w-full max-w-7xl items-center gap-6 px-5 pb-16 pt-24 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10 lg:pt-20">
         {/* copy */}
         <div className="relative z-10">
-          <p className="hero-in label-mono flex items-center gap-2" style={{ '--d': '0ms' }}>
-            <span aria-hidden="true" className="h-2 w-2 animate-pulse rounded-full bg-signal shadow-[0_0_10px_#35e0f2]" />
+          <p
+            className="hero-in inline-flex items-center gap-2 rounded-full border border-brand/30 bg-brand-soft px-4 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-signal-deep"
+            style={{ '--d': '0ms' }}
+          >
+            <span aria-hidden="true" className="h-2 w-2 animate-pulse rounded-full bg-brand" />
             {site.availability}
           </p>
 
@@ -80,9 +84,10 @@ export default function Hero() {
           </h1>
 
           <p
-            className="hero-in mt-4 bg-gradient-to-r from-signal-soft via-signal to-amber-glow bg-clip-text font-display text-xl font-medium text-transparent sm:text-2xl"
+            className="hero-in mt-4 flex items-center gap-3 font-display text-xl font-semibold text-signal sm:text-2xl"
             style={{ '--d': '160ms' }}
           >
+            <span aria-hidden="true" className="h-[3px] w-10 rounded-full bg-brand" />
             {site.title}
           </p>
 
@@ -112,14 +117,14 @@ export default function Hero() {
             />
           </div>
 
-          <dl className="hero-in mt-10 flex gap-8 border-t border-white/[0.07] pt-6" style={{ '--d': '480ms' }}>
-            <div>
+          <dl className="hero-in mt-10 grid max-w-md grid-cols-2 gap-4" style={{ '--d': '480ms' }}>
+            <div className="rounded-2xl border border-white/10 bg-ink-950 p-4 shadow-card">
               <dt className="label-mono">Experience</dt>
-              <dd className="mt-1 font-display text-2xl text-white">{site.experienceYears} years</dd>
+              <dd className="mt-1 font-display text-2xl font-bold text-white">{site.experienceYears} years</dd>
             </div>
-            <div>
+            <div className="rounded-2xl border border-white/10 bg-ink-950 p-4 shadow-card">
               <dt className="label-mono">Based in</dt>
-              <dd className="mt-1 font-display text-2xl text-white">{site.location}</dd>
+              <dd className="mt-1 font-display text-2xl font-bold text-white">{site.location}</dd>
             </div>
           </dl>
         </div>
@@ -132,10 +137,8 @@ export default function Hero() {
           className="hero-in relative h-[58svh] min-h-[380px] w-full lg:h-[82svh] lg:max-h-[760px]"
           style={{ '--d': '200ms' }}
         >
-          <div className="hud-card absolute inset-0 overflow-hidden bg-ink-900/40">
-            <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-24 overflow-hidden opacity-40">
-              <div className="scan-line h-full w-full bg-gradient-to-b from-transparent via-signal/20 to-transparent" />
-            </div>
+          <div className="absolute inset-0 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-ink-950 via-brand-soft/60 to-brand-light/70 shadow-lift">
+            <div aria-hidden="true" className="bg-grid pointer-events-none absolute inset-0 opacity-50" />
 
             {avatarActive ? (
               <SceneErrorBoundary fallback={<AvatarFallback />} onError={onAvatarFailed}>
@@ -153,10 +156,11 @@ export default function Hero() {
               <AvatarFallback />
             )}
 
-            <p className="pointer-events-none absolute left-4 top-4 font-mono text-[10px] uppercase tracking-[0.2em] text-signal/70">
-              Control room // live
+            <p className="pointer-events-none absolute left-5 top-5 inline-flex items-center gap-2 rounded-full bg-ink-950/90 px-3 py-1 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-signal-deep shadow-card">
+              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-brand" />
+              Live 3D assistant
             </p>
-            <p className="pointer-events-none absolute inset-x-4 bottom-4 font-mono text-[10px] uppercase leading-relaxed tracking-[0.14em] text-slate-500">
+            <p className="pointer-events-none absolute inset-x-5 bottom-4 font-mono text-[10px] uppercase leading-relaxed tracking-[0.12em] text-slate-400">
               {caption}
             </p>
           </div>

@@ -1,6 +1,6 @@
 # Habib Ullah: 3D Developer Portfolio
 
-Interactive "Control Room" portfolio: dark theme, electric-cyan accents, warm amber highlights.
+Interactive developer portfolio: white background, orange brand (matches the HU logo), charcoal text, full-body 3D assistant.
 Built with React, Vite, Three.js, React Three Fiber, Drei, GSAP, Framer Motion, Tailwind CSS and Lucide icons.
 
 ## Quick start
@@ -49,6 +49,12 @@ The form is disabled and says so until you set an endpoint in `src/data/contact.
 
 Until step 4, the success message says the submission was *accepted by the form service* and never claims the message was delivered.
 
+## Design system (white + orange)
+
+Light theme matching the HU logo: white surfaces, charcoal text, orange brand `#ff6a00`. Colors live in `tailwind.config.js` (`brand`, `signal` for orange text, `ink-*` surfaces, `slate-*` greys); component styles (`.btn-primary`, `.btn-ghost`, `.hud-card`, `.chip`) are in `src/index.css`. Primary buttons use charcoal text on the bright orange (6.3:1 contrast; white would be 2.9:1). All text and button color pairs were checked against WCAG AA (4.5:1).
+
+Logo files are in `public/brand/` (`logo-full.webp`, `logo-mark.webp`, favicon and touch icon). They come from your transparent PNG, unretouched.
+
 ## Full-body animated assistant and voice introduction
 
 The hero shows `public/models/avatar.glb` (your Avaturn model) as a full-body character, head to feet.
@@ -82,6 +88,10 @@ Setup: `npm install`, `npm run dev`, `npm run build`.
 ### Performance
 
 One WebGL canvas; the 3D chunk loads when the browser is idle after first paint; rendering stops when the hero is off-screen; the pixel ratio is capped and steps down if the frame rate drops; phones/weak devices use the `low` tier (no particles, no cursor look). Static tier (no WebGL, reduced motion, data saver) keeps the audio-only introduction. Not yet measured on a real 4 GB machine.
+
+### Real motion clips (recommended for a realistic run)
+
+The built-in run and gestures are procedural (code). For natural motion-capture, add Mixamo clips: see `public/animations/README.md`. Clip playback is implemented but **not yet tested with a real clip**.
 
 Tuning: `assets.avatar` (height, offset, pose), `assets.stage` (framing), entrance timing in `src/components/avatar/motion/director.js`.
 

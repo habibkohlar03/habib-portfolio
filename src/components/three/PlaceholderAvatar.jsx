@@ -37,7 +37,7 @@ export default function PlaceholderAvatar({ audio }) {
     }
   });
 
-  const body = { color: '#1a2030', metalness: 0.55, roughness: 0.4 };
+  const body = { color: '#8a8f99', metalness: 0.3, roughness: 0.5 };
 
   return (
     <group ref={root}>
@@ -60,7 +60,7 @@ export default function PlaceholderAvatar({ audio }) {
       {/* chest light */}
       <mesh position={[0, 1.2, 0.15]}>
         <circleGeometry args={[0.035, 24]} />
-        <meshStandardMaterial color="#35e0f2" emissive="#35e0f2" emissiveIntensity={2} />
+        <meshStandardMaterial color="#ff6a00" emissive="#ff6a00" emissiveIntensity={2} />
       </mesh>
 
       {/* neck + head */}
@@ -76,7 +76,7 @@ export default function PlaceholderAvatar({ audio }) {
         {/* visor line */}
         <mesh position={[0, 0.01, 0.135]}>
           <boxGeometry args={[0.17, 0.018, 0.02]} />
-          <meshStandardMaterial color="#ffb547" emissive="#ffb547" emissiveIntensity={1.6} />
+          <meshStandardMaterial color="#ff9a4d" emissive="#ff9a4d" emissiveIntensity={1.6} />
         </mesh>
       </group>
 
@@ -99,7 +99,7 @@ export default function PlaceholderAvatar({ audio }) {
       {/* audio-reactive halo */}
       <mesh ref={halo} position={[0, 0.02, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[0.62, 0.008, 8, 96]} />
-        <meshStandardMaterial color="#35e0f2" emissive="#35e0f2" emissiveIntensity={0.35} />
+        <meshStandardMaterial color="#ff6a00" emissive="#ff6a00" emissiveIntensity={0.35} />
       </mesh>
     </group>
   );

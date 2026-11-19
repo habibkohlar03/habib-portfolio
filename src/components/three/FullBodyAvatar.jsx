@@ -16,6 +16,7 @@ import { findBone, lowerArms } from './avatarPose';
 import { BONE_ORDER, buildPose, deltaQuaternion } from '../avatar/motion/proceduralPose';
 import { createDirector } from '../avatar/motion/director';
 import { createBlinkScheduler } from '../avatar/motion/blink';
+import { loadClip } from '../avatar/motion/clips';
 
 /**
  * Full-body animated assistant.
@@ -72,6 +73,41 @@ export default function FullBodyAvatar({ config, audio, hasTimeline, onCapabilit
   const blinker = useMemo(() => createBlinkScheduler(), []);
   const weights = useRef({});
 
+  // Optional real motion clips (assets.avatar.animations). When run + idle are both set and
+  // load successfully they drive the body; otherwise the procedural motion is used.
+  const clips = useRef(null);
+  const anim = config.animations || {};
+  const wantClips = Boolean(anim.run && anim.idle);
+  const talkKey = (anim.talk || []).join('|');
+  useEffect(() => {
+    if (!wantClips) return undefined;
+    let dead = false;
+    const mixer = new THREE.AnimationMixer(scene);
+    Promise.all([loadClip(anim.run), loadClip(anim.idle), ...(anim.talk || []).map(loadClip)])
+      .then(([run, idle, ...talk]) => {
+        if (dead) return;
+        const make = (clip) => {
+          const action = mixer.clipAction(clip);
+          action.setEffectiveWeight(0);
+          action.play();
+          return action;
+        };
+        clips.current = { mixer, run: make(run), idle: make(idle), talk: talk.map(make), tw: talk.map(() => 0), idx: 0, last: 0 };
+        if (onCapabilities) onCapabilities({ mode, blink: caps.blink.length > 0, bones: bones.length, clips: true });
+      })
+      .catch((err) => {
+        // eslint-disable-next-line no-console
+        console.warn('[avatar] motion clips unavailable, using procedural motion:', err);
+      });
+    return () => {
+      dead = true;
+      clips.current = null;
+      mixer.stopAllAction();
+      mixer.uncacheRoot(scene);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantClips, anim.run, anim.idle, talkKey, scene]);
+
   const mode = useMemo(() => {
     const canTimeline = hasTimeline && (caps.visemes.length > 0 || caps.arkitMouth.length > 0);
     if (canTimeline) return 'visemes';
@@ -115,6 +151,27 @@ export default function FullBodyAvatar({ config, audio, hasTimeline, onCapabilit
       root.current.position.set(0, bob * prepared.scale, step.z);
     }
 
+    const c = clips.current;
+    if (c) {
+      // Motion-capture clips drive the body; the director supplies weights and root travel.
+      const run = step.runWeight;
+      const talkAvail = c.talk.length > 0;
+      const talkW = talkAvail ? (1 - run) * step.speak : 0;
+      c.run.setEffectiveWeight(run);
+      c.run.timeScale = 0.7 + 0.3 * run;
+      c.idle.setEffectiveWeight((1 - run) * (1 - (talkAvail ? step.speak : 0)));
+      if (talkAvail) {
+        const cur = c.talk[c.idx];
+        // when the current talk clip loops, move on to the next one (varied movement)
+        if (cur.time < c.last && c.talk.length > 1) c.idx = (c.idx + 1) % c.talk.length;
+        c.last = c.talk[c.idx].time;
+        c.talk.forEach((action, i) => {
+          c.tw[i] = THREE.MathUtils.damp(c.tw[i], i === c.idx ? 1 : 0, 6, dt);
+          action.setEffectiveWeight(talkW * c.tw[i]);
+        });
+      }
+      c.mixer.update(dt);
+    } else {
     // local' = parent^-1 * delta * parent * rest, with `parent` measured relative to the
     // avatar container so the delta is expressed in the character's own frame.
     scene.updateMatrixWorld(true);
@@ -129,6 +186,7 @@ export default function FullBodyAvatar({ config, audio, hasTimeline, onCapabilit
       tmp.delta.set(x, y, z, w);
       tmp.out.copy(tmp.parentInv).multiply(tmp.delta).multiply(tmp.parentQ).multiply(rest);
       bone.quaternion.copy(tmp.out);
+    }
     }
 
     // ---- face: real morph targets only ----

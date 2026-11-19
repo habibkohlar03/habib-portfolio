@@ -27,7 +27,7 @@ export default function Process() {
             <li key={step.id} data-reveal data-reveal-delay={(i % 3) * 0.07}>
               <div className="hud-card h-full p-6">
                 <div className="flex items-center justify-between">
-                  <span className="grid h-11 w-11 place-items-center rounded-md border border-signal/30 bg-signal/[0.06] text-signal">
+                  <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-soft text-signal">
                     <Icon size={20} aria-hidden="true" />
                   </span>
                   <span className="font-mono text-xs tracking-[0.2em] text-amber-glow/80">

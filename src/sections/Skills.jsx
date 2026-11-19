@@ -24,7 +24,7 @@ export default function Skills() {
           return (
             <article key={group.id} className="hud-card p-6 sm:p-7" data-reveal data-reveal-delay={(i % 2) * 0.08}>
               <header className="flex items-center gap-3">
-                <span className="grid h-10 w-10 place-items-center rounded-md border border-signal/30 bg-signal/[0.06] text-signal">
+                <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-soft text-signal">
                   <Icon size={18} aria-hidden="true" />
                 </span>
                 <h3 className="font-display text-lg font-semibold text-white">{group.title}</h3>

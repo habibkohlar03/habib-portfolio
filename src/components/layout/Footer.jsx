@@ -2,17 +2,18 @@ import { site, nav } from '../../data/site';
 
 export default function Footer() {
   return (
-    <footer className="border-t border-white/[0.06] py-10">
+    <footer className="border-t border-white/10 bg-ink-900 py-12">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 sm:px-8 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="font-display text-base font-semibold text-white">{site.name}</p>
+          <img src="/brand/logo-full.webp" alt={site.name} width="900" height="315" loading="lazy" decoding="async" className="mb-3 h-16 w-auto" />
+          <p className="sr-only">{site.name}</p>
           <p className="mt-1 text-sm text-slate-500">
             {site.title} · {site.location}
           </p>
         </div>
         <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2">
           {nav.map(({ id, label }) => (
-            <a key={id} href={`#${id}`} className="font-mono text-[11px] uppercase tracking-[0.16em] text-slate-500 hover:text-signal">
+            <a key={id} href={`#${id}`} className="font-display text-sm font-medium text-slate-500 hover:text-signal">
               {label}
             </a>
           ))}

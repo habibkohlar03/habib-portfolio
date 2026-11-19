@@ -40,9 +40,9 @@ export default function Services() {
           const Icon = ICONS[service.icon] ?? Globe;
           return (
             <li key={service.id} data-reveal data-reveal-delay={(i % 3) * 0.07}>
-              <article className="hud-card group h-full p-6 transition-colors duration-300 hover:bg-ink-800/80">
+              <article className="hud-card group h-full p-6">
                 <div className="flex items-start justify-between">
-                  <span className="grid h-11 w-11 place-items-center rounded-md border border-signal/30 bg-signal/[0.06] text-signal transition-colors group-hover:border-amber-glow/60 group-hover:text-amber-glow">
+                  <span className="grid h-12 w-12 place-items-center rounded-xl bg-brand-soft text-signal transition-colors group-hover:bg-brand group-hover:text-[#14161b]">
                     <Icon size={20} aria-hidden="true" />
                   </span>
                   <span className="font-mono text-[11px] text-slate-600">{String(i + 1).padStart(2, '0')}</span>

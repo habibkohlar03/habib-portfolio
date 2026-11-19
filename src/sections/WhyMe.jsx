@@ -19,7 +19,7 @@ export default function WhyMe() {
           const Icon = ICONS[point.icon] ?? Target;
           return (
             <li key={point.id} className="flex gap-4" data-reveal data-reveal-delay={(i % 3) * 0.07}>
-              <span className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-md border border-signal/30 bg-signal/[0.06] text-signal">
+              <span className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-soft text-signal">
                 <Icon size={18} aria-hidden="true" />
               </span>
               <div>

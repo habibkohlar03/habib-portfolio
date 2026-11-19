@@ -27,15 +27,15 @@ function ProjectVisual({ project, index }) {
 
   // No screenshot yet: a clearly synthetic monogram panel, not a fake screenshot.
   return (
-    <div className="relative grid h-full w-full place-items-center overflow-hidden bg-ink-800">
+    <div className="relative grid h-full w-full place-items-center overflow-hidden bg-gradient-to-br from-brand-soft to-ink-800">
       <div aria-hidden="true" className="bg-grid absolute inset-0 opacity-70" />
       <div
         aria-hidden="true"
-        className={`absolute -bottom-10 h-40 w-40 rounded-full blur-3xl ${warm ? 'bg-amber-glow/20' : 'bg-signal/20'}`}
+        className={`absolute -bottom-10 h-40 w-40 rounded-full blur-3xl ${warm ? 'bg-brand/25' : 'bg-brand/20'}`}
       />
       <span
         aria-hidden="true"
-        className={`relative font-display text-6xl font-bold tracking-tight ${warm ? 'text-amber-glow/80' : 'text-signal/80'}`}
+        className={`relative font-display text-6xl font-bold tracking-tight ${warm ? 'text-signal-soft' : 'text-signal'}`}
       >
         {initials(project.name)}
       </span>
@@ -53,7 +53,7 @@ function ProjectCard({ project, index, tiltDisabled }) {
     <li data-reveal data-reveal-delay={(index % 2) * 0.08}>
       <TiltCard disabled={tiltDisabled} className="h-full">
         <article className="hud-card group flex h-full flex-col overflow-hidden">
-          <div className="aspect-[16/10] w-full overflow-hidden border-b border-white/[0.06]">
+          <div className="aspect-[16/10] w-full overflow-hidden border-b border-white/10">
             <ProjectVisual project={project} index={index} />
           </div>
 
@@ -67,7 +67,7 @@ function ProjectCard({ project, index, tiltDisabled }) {
 
             <h3 className="mt-3 font-display text-xl font-semibold text-white">{project.name}</h3>
 
-            {project.category ? <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.16em] text-signal/80">{project.category}</p> : null}
+            {project.category ? <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.16em] text-signal">{project.category}</p> : null}
 
             <p className="mt-3 flex-1 text-sm leading-relaxed text-slate-400">
               {hasDetails ? project.description : 'Project description to be added.'}

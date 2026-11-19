@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-// Thin cyan progress line at the top. Updates via transform in rAF (no re-renders).
+// Thin orange progress line at the top. Updates via transform in rAF (no re-renders).
 export default function ScrollProgress() {
   const bar = useRef(null);
 
@@ -28,7 +28,7 @@ export default function ScrollProgress() {
 
   return (
     <div aria-hidden="true" className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[2px]">
-      <div ref={bar} className="h-full origin-left scale-x-0 bg-gradient-to-r from-signal to-amber-glow" />
+      <div ref={bar} className="h-full origin-left scale-x-0 bg-gradient-to-r from-brand to-signal-soft" />
     </div>
   );
 }

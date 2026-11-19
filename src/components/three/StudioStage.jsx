@@ -32,26 +32,25 @@ export default function StudioStage({ quality, audio }) {
 
   return (
     <>
-      {/* lighting: warm key, cyan rim, cool fill */}
-      <ambientLight intensity={0.35} />
-      <hemisphereLight args={['#6bd7ff', '#0a0c12', 0.5]} />
-      <directionalLight position={[-3, 3, 4]} intensity={1.5} color="#ffb547" />
-      <directionalLight position={[3, 2.5, -3]} intensity={2.6} color="#35e0f2" />
-      {/* neutral soft fill so skin tones read naturally under the colored key/rim */}
-      <directionalLight position={[0.5, 2.2, 4]} intensity={0.7} color="#ffffff" />
+      {/* bright studio lighting: soft white key and fill so skin reads naturally, warm orange rim */}
+      <ambientLight intensity={0.75} />
+      <hemisphereLight args={['#ffffff', '#ffd9bd', 0.7]} />
+      <directionalLight position={[-3, 3.5, 4]} intensity={1.6} color="#fff3e6" />
+      <directionalLight position={[3, 2.5, -3]} intensity={1.8} color="#ff8a3d" />
+      <directionalLight position={[0.5, 2.2, 4]} intensity={0.8} color="#ffffff" />
 
       {/* platform */}
       <mesh position={[0, -0.04, 0]}>
         <cylinderGeometry args={[0.9, 0.94, 0.08, 64]} />
-        <meshStandardMaterial color="#0d1018" metalness={0.7} roughness={0.35} />
+        <meshStandardMaterial color="#f1ece7" metalness={0.1} roughness={0.55} />
       </mesh>
       <mesh ref={ring} position={[0, 0.004, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[0.88, 0.012, 8, 96]} />
-        <meshStandardMaterial color="#35e0f2" emissive="#35e0f2" emissiveIntensity={0.7} />
+        <meshStandardMaterial color="#ff6a00" emissive="#ff6a00" emissiveIntensity={0.7} />
       </mesh>
       <mesh position={[0, -0.075, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[1.3, 0.006, 8, 96]} />
-        <meshBasicMaterial color="#35e0f2" transparent opacity={0.25} />
+        <meshBasicMaterial color="#ff6a00" transparent opacity={0.3} />
       </mesh>
 
       {positions ? (
@@ -59,7 +58,7 @@ export default function StudioStage({ quality, audio }) {
           <bufferGeometry>
             <bufferAttribute attach="attributes-position" count={positions.length / 3} array={positions} itemSize={3} />
           </bufferGeometry>
-          <pointsMaterial color="#8ff0fa" size={0.022} sizeAttenuation transparent opacity={0.55} depthWrite={false} />
+          <pointsMaterial color="#ff8a3d" size={0.022} sizeAttenuation transparent opacity={0.5} depthWrite={false} />
         </points>
       ) : null}
     </>
